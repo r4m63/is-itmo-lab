@@ -13,7 +13,6 @@
 [![JavaScript](https://img.shields.io/badge/JavaScript-ES2023-F7DF1E?logo=javascript&style=flat-square)](https://developer.mozilla.org/docs/Web/JavaScript)
 [![React](https://img.shields.io/badge/React-18-61DAFB?logo=react&style=flat-square)](https://react.dev/)
 
-
 ## Задание
 
 Реализовать информационную систему, которая позволяет взаимодействовать с объектами класса Vehicle, описание которого
