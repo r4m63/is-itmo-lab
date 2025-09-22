@@ -4,6 +4,12 @@
 
 ## Технологический стек
 
+[![Java](https://img.shields.io/badge/Java-17-007396?logo=openjdk&style=flat-square)](https://adoptium.net/)
+[![Jakarta EE](https://img.shields.io/badge/Jakarta%20EE-11-2F5D88?logo=jakartaee&style=flat-square)](https://jakarta.ee/)
+[![Apache Tomcat](https://img.shields.io/badge/Tomcat-10.1-F8DC75?logo=apachetomcat&style=flat-square)](https://tomcat.apache.org/)
+
+[![JavaScript](https://img.shields.io/badge/JavaScript-ES2023-F7DF1E?logo=javascript&style=flat-square)](https://developer.mozilla.org/docs/Web/JavaScript)
+[![React](https://img.shields.io/badge/React-18-61DAFB?logo=react&style=flat-square)](https://react.dev/)
 
 
 ## Задание
