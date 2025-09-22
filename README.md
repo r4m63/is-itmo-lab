@@ -2,6 +2,8 @@
 
 Вариант: 409664
 
+> Каждая лабораторная работа находится в своей отдельной ветке: lab1, lab2, lab3, lab4
+
 ## Технологический стек
 
 [![Java](https://img.shields.io/badge/Java-17-007396?logo=openjdk&style=flat-square)](https://adoptium.net/)
