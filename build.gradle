@@ -3,8 +3,8 @@ plugins {
     id 'war'
 }
 
-group 'ru.itmo'
-version '1.0-SNAPSHOT'
+group = 'ru.itmo'
+version = '1.0-SNAPSHOT'
 
 repositories {
     mavenCentral()
@@ -14,11 +14,15 @@ ext {
     junitVersion = '5.11.0'
 }
 
-sourceCompatibility = '21'
-targetCompatibility = '21'
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
+}
 
-tasks.withType(JavaCompile) {
+tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
+    options.release = 17
 }
 
 dependencies {
@@ -27,6 +31,7 @@ dependencies {
     testImplementation("org.junit.jupiter:junit-jupiter-api:${junitVersion}")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:${junitVersion}")
 }
+
 
 test {
     useJUnitPlatform()
