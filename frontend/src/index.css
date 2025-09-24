@@ -5,12 +5,12 @@
 
 
 html {
-  scroll-behavior: smooth;
+    scroll-behavior: smooth;
 }
 
 body {
-  /*background-color: #212121;*/
-  background-color: #edeef2;
-  color: #000000;
-  min-height: 100vh;
+    /*background-color: #212121;*/
+    background-color: #edeef2;
+    color: #000000;
+    min-height: 100vh;
 }
