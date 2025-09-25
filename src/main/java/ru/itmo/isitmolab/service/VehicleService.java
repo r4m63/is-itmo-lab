@@ -4,46 +4,46 @@ import jakarta.ejb.Stateless;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
+import ru.itmo.isitmolab.dao.VehicleDao;
 import ru.itmo.isitmolab.dto.VehicleDto;
 import ru.itmo.isitmolab.model.Vehicle;
-import ru.itmo.isitmolab.repository.VehicleRepository;
 
 
 @Stateless
 public class VehicleService {
 
     @Inject
-    VehicleRepository repo;
+    VehicleDao dao;
 
     public void createNewVehicle(VehicleDto dto) {
         Vehicle entity = VehicleDto.toEntity(dto, null);
-        Vehicle saved = repo.save(entity);
+        Vehicle saved = dao.save(entity);
         VehicleDto.fromEntity(saved);
     }
 
     public void updateVehicle(Long id, VehicleDto dto) {
-        Vehicle current = repo.findById(id)
+        Vehicle current = dao.findById(id)
                 .orElseThrow(() -> new WebApplicationException(
                         "Vehicle not found: " + id, Response.Status.NOT_FOUND));
 
         VehicleDto.toEntity(dto, current);
-        Vehicle saved = repo.save(current);
+        Vehicle saved = dao.save(current);
         VehicleDto.fromEntity(saved);
     }
 
     public VehicleDto getVehicleById(Long id) {
-        Vehicle v = repo.findById(id)
+        Vehicle v = dao.findById(id)
                 .orElseThrow(() -> new WebApplicationException(
                         "Vehicle not found: " + id, Response.Status.NOT_FOUND));
         return VehicleDto.fromEntity(v);
     }
 
     public void deleteVehicleById(Long id) {
-        if (!repo.existsById(id)) {
+        if (!dao.existsById(id)) {
             throw new WebApplicationException(
                     "Vehicle not found: " + id, Response.Status.NOT_FOUND);
         }
-        repo.deleteById(id);
+        dao.deleteById(id);
     }
 }
 
