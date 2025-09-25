@@ -1,16 +1,16 @@
-CREATE TABLE IF NOT EXISTS vehicle (
-    id                SERIAL PRIMARY KEY,
-    name              TEXT NOT NULL CHECK (length(trim(name)) > 0),
-    x                 DOUBLE PRECISION NOT NULL CHECK (x <= 613),
-    y                 REAL NOT NULL CHECK (y <= 962),
-    creation_date     TIMESTAMP NOT NULL DEFAULT now(),
-    type              TEXT NOT NULL CHECK (type IN ('CAR','HELICOPTER','MOTORCYCLE','CHOPPER')),
-    engine_power      INTEGER CHECK (engine_power > 0),
-    number_of_wheels  INTEGER NOT NULL CHECK (number_of_wheels > 0),
-    capacity          INTEGER CHECK (capacity > 0),
-    distance_travelled INTEGER CHECK (distance_travelled > 0),
-    fuel_consumption  REAL NOT NULL CHECK (fuel_consumption > 0),
-    fuel_type         TEXT NOT NULL CHECK (fuel_type IN ('KEROSENE','MANPOWER','NUCLEAR'))
+CREATE TABLE IF NOT EXISTS vehicles (
+    id                  BIGSERIAL PRIMARY KEY,
+    name                TEXT NOT NULL CHECK (length(btrim(name)) > 0),
+    coordinates_x       DOUBLE PRECISION NOT NULL CHECK (coordinates_x <= 613),
+    coordinates_y       REAL NOT NULL CHECK (coordinates_y <= 962),
+    creation_date       TIMESTAMP NOT NULL DEFAULT now(),
+    type                TEXT NOT NULL CHECK (type IN ('CAR','HELICOPTER','MOTORCYCLE','CHOPPER')),
+    engine_power        INTEGER CHECK (engine_power > 0),
+    number_of_wheels    INTEGER NOT NULL CHECK (number_of_wheels > 0),
+    capacity            INTEGER CHECK (capacity > 0),
+    distance_travelled  INTEGER CHECK (distance_travelled > 0),
+    fuel_consumption    REAL NOT NULL CHECK (fuel_consumption > 0),
+    fuel_type           TEXT NOT NULL CHECK (fuel_type IN ('KEROSENE','MANPOWER','NUCLEAR'))
 );
 
 -- Функция 1: id объекта с минимальным distance_travelled (любой один)

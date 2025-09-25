@@ -5,4 +5,3 @@ public enum FuelType {
     MANPOWER,
     NUCLEAR
 }
-

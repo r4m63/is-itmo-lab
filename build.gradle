@@ -26,16 +26,15 @@ tasks.withType(JavaCompile).configureEach {
 }
 
 dependencies {
-    compileOnly 'jakarta.platform:jakarta.jakartaee-web-api:9.0.0'
-    compileOnly 'jakarta.ws.rs:jakarta.ws.rs-api:4.0.0'
+    compileOnly 'jakarta.platform:jakarta.jakartaee-web-api:11.0.0'
+    implementation 'org.hibernate.orm:hibernate-core:6.6.1.Final'
+    implementation 'org.postgresql:postgresql:42.7.4'
 
     compileOnly 'org.projectlombok:lombok:1.18.34'
     annotationProcessor 'org.projectlombok:lombok:1.18.34'
 
     implementation 'ch.qos.logback:logback-classic:1.5.13'
 
-    implementation 'org.hibernate.orm:hibernate-core:6.6.1.Final'
-    implementation 'org.postgresql:postgresql:42.7.4'
     runtimeOnly 'org.slf4j:slf4j-simple:2.0.16'
 }
 

@@ -1,36 +1,36 @@
 package ru.itmo.isitmolab.model;
 
 import jakarta.persistence.*;
-import jakarta.validation.Valid;
-import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
+import ru.itmo.isitmolab.dto.CoordinatesDto;
+import ru.itmo.isitmolab.dto.VehicleDto;
 
 import java.util.Date;
 
-@Setter
-@Getter
 @Entity
-@Table(name = "vehicle")
+@Table(name = "vehicles")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class Vehicle {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @NotNull
     @NotBlank
     @Column(nullable = false)
     private String name;
 
     @NotNull
-    @Valid
     @Embedded
     private Coordinates coordinates;
 
-    @NotNull
     @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "creation_date", nullable = false, updatable = false)
     private Date creationDate;
@@ -41,31 +41,34 @@ public class Vehicle {
     private VehicleType type;
 
     @Positive
-    private Integer enginePower;
-
-    @Min(1)
-    @Column(nullable = false)
-    private int numberOfWheels;
+    @Column(name = "engine_power")
+    private Integer enginePower; // nullable, >0
 
     @Positive
-    private Integer capacity;
+    @Column(name = "number_of_wheels", nullable = false)
+    private int numberOfWheels; // >0
 
     @Positive
-    private Integer distanceTravelled;
+    private Integer capacity; // nullable, >0
 
     @Positive
-    @Column(nullable = false)
-    private float fuelConsumption;
+    @Column(name = "distance_travelled")
+    private Integer distanceTravelled; // nullable, >0
+
+    @Positive
+    @Column(name = "fuel_consumption", nullable = false)
+    private float fuelConsumption; // >0
 
     @NotNull
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(name = "fuel_type", nullable = false)
     private FuelType fuelType;
 
     @PrePersist
-    public void prePersist() {
-        if (creationDate == null) creationDate = new Date();
+    void onCreate() {
+        if (creationDate == null) {
+            creationDate = new Date();
+        }
     }
-
 
 }
