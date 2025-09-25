@@ -84,13 +84,13 @@ export default function MainPage() {
         if (!name.trim()) return "Заполните name.";
         if (coordX === "" || isNaN(Number(coordX))) return "Координата X должна быть числом.";
         if (coordY === "" || isNaN(Number(coordY))) return "Координата Y должна быть числом.";
-        if (!type) return "Выберите тип (type).";
+        if (!type) return "Выберите type.";
         if (!numberOfWheels || Number(numberOfWheels) <= 0) return "numberOfWheels должно быть > 0.";
         if (!fuelConsumption || Number(fuelConsumption) <= 0) return "fuelConsumption должно быть > 0.";
         if (!fuelType) return "Выберите fuelType.";
-        if (enginePower !== "" && Number(enginePower) <= 0) return "enginePower (если задано) должно быть > 0.";
-        if (capacity !== "" && Number(capacity) <= 0) return "capacity (если задано) должно быть > 0.";
-        if (distanceTravelled !== "" && Number(distanceTravelled) <= 0) return "distanceTravelled (если задан) должно быть > 0.";
+        if (enginePower !== "" && Number(enginePower) <= 0) return "enginePower должно быть > 0.";
+        if (capacity !== "" && Number(capacity) <= 0) return "capacity должно быть > 0.";
+        if (distanceTravelled !== "" && Number(distanceTravelled) <= 0) return "distanceTravelled должно быть > 0.";
         return null;
     }
 
@@ -105,19 +105,19 @@ export default function MainPage() {
                 x: coordX === "" ? null : Number(coordX),
                 y: coordY === "" ? null : Number(coordY),
             },
-            type,
+            type: type,
             enginePower: enginePower === "" ? null : Number(enginePower),
             numberOfWheels: Number(numberOfWheels),
             capacity: capacity === "" ? null : Number(capacity),
             distanceTravelled: distanceTravelled === "" ? null : Number(distanceTravelled),
             fuelConsumption: Number(fuelConsumption),
-            fuelType,
+            fuelType: fuelType,
         };
 
         const isEdit = Boolean(activeVehicle?.id);
         const url = isEdit
-            ? `${API_BASE}/api/vehicles/${activeVehicle.id}`
-            : `${API_BASE}/api/vehicles`;
+            ? `${API_BASE}/api/vehicle/${activeVehicle.id}`
+            : `${API_BASE}/api/vehicle`;
 
         try {
             const res = await fetch(url, {
@@ -128,25 +128,22 @@ export default function MainPage() {
             });
 
             if (res.ok) {
-                toast.success("Сохранено");
                 onOpenChange(false);
-                tableRef.current?.refresh(); // <- мягкая перезагрузка данных без remount
+                tableRef.current?.refresh(); // мягкая перезагрузка данных без remount
+                toast.success("Сохранено");
                 return;
-            }
-
-            let errorData = {};
-            try {
-                errorData = await res.json();
-            } catch (_) {
-            }
-            if (res.status === 401) {
-                setIsAuthed(false);
-                toast.error(errorData.detail || errorData.message || "Session error");
-                navigate("/login", {replace: true});
-            } else if (res.status === 409) {
-                toast.warning(errorData.message || "Конфликт данных");
             } else {
-                toast.error(`Error: ${res.status} - ${res.statusText}`);
+                const errorData = await res.json();
+                switch (res.status) {
+                    case 401:
+                        setIsAuthed(false);
+                        toast.error(errorData.message || 'Not correct credentials');
+                        break;
+                    default:
+                        setIsAuthed(false);
+                        toast.error(`Error: ${res.status} - ${res.statusText}`);
+                        break;
+                }
             }
         } catch (e) {
             console.error(e);
