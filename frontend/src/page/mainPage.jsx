@@ -22,6 +22,7 @@ import styles from "./mainPage.module.css";
 import {useNavigate} from "react-router-dom";
 import useAuthStore from "../store/auth.js";
 import {API_BASE} from "../../cfg.js";
+import VehicleTable from "../component/vehicleTable.jsx";
 
 
 export default function MainPage() {
@@ -153,6 +154,8 @@ export default function MainPage() {
                     </div>
                 </div>
             </div>
+
+            <VehicleTable/>
 
             <Modal isOpen={isOpen} onOpenChange={onOpenChange} isDismissable={false}>
                 <ModalContent className={styles.postModalBody}>

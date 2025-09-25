@@ -6,7 +6,7 @@ import {Button, Input} from "@heroui/react";
 import {toast} from "sonner";
 import useAuthStore from "../store/auth.js";
 import style from "./loginPage.module.css";
-import {API_BASE, FRONTEND_BASE} from "../../cfg.js";
+import {API_BASE} from "../../cfg.js";
 
 export default function LoginPage() {
     const [email, setEmail] = useState("");
