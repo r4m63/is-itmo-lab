@@ -1,9 +1,8 @@
-// src/page/MainPage.jsx
+'use client';
 
 import {useState} from "react";
 import {
     Button,
-    DateInput,
     Input,
     Modal,
     ModalBody,
@@ -13,10 +12,10 @@ import {
     Popover,
     PopoverContent,
     PopoverTrigger,
-    Textarea,
+    Select,
+    SelectItem,
     useDisclosure,
 } from "@heroui/react";
-import {CalendarDate} from "@internationalized/date";
 import {toast} from "sonner";
 import styles from "./mainPage.module.css";
 import {useNavigate} from "react-router-dom";
@@ -24,81 +23,161 @@ import useAuthStore from "../store/auth.js";
 import {API_BASE} from "../../cfg.js";
 import VehicleTable from "../component/vehicleTable.jsx";
 
+const VEHICLE_TYPES = ["CAR", "TRUCK", "BUS", "PLANE", "BOAT"];
+const FUEL_TYPES = ["GASOLINE", "DIESEL", "KEROSENE", "ELECTRIC"];
 
 export default function MainPage() {
-    const [activePost, setActivePost] = useState(null);
+    const navigate = useNavigate();
+    const {setIsAuthed} = useAuthStore();
 
-    const [title, setTitle] = useState("");
-    const [desc, setDesc] = useState("");
-    const [date, setDate] = useState(null);
+    const [activeVehicle, setActiveVehicle] = useState(null);
+
+    // форма
+    const [name, setName] = useState("");
+    const [coordX, setCoordX] = useState("");
+    const [coordY, setCoordY] = useState("");
+    const [type, setType] = useState("");
+    const [enginePower, setEnginePower] = useState("");
+    const [numberOfWheels, setNumberOfWheels] = useState("");
+    const [capacity, setCapacity] = useState("");
+    const [distanceTravelled, setDistanceTravelled] = useState("");
+    const [fuelConsumption, setFuelConsumption] = useState("");
+    const [fuelType, setFuelType] = useState("");
 
     const {isOpen, onOpen, onOpenChange} = useDisclosure();
 
-    const openAddModal = () => {
-        setActivePost(null);
-        setTitle("");
-        setDesc("");
-        setDate(null);
+    const openNewVehicleModal = () => {
+        setActiveVehicle(null);
+
+        setName("");
+        setCoordX("");
+        setCoordY("");
+        setType("");
+        setEnginePower("");
+        setNumberOfWheels("");
+        setCapacity("");
+        setDistanceTravelled("");
+        setFuelConsumption("");
+        setFuelType("");
+
         onOpen();
     };
 
+    const openEditVehicleModal = async (vehicle) => {
+        setActiveVehicle(vehicle);
+
+        setName(vehicle.name);
+        setCoordX(vehicle.coordinates.x);
+        setCoordY(vehicle.coordinates.y);
+        setType(vehicle.type);
+        setEnginePower(vehicle.enginePower);
+        setNumberOfWheels(vehicle.numberOfWheels);
+        setCapacity(vehicle.capacity);
+        setDistanceTravelled(vehicle.distanceTravelled);
+        setFuelConsumption(vehicle.fuelConsumption);
+        setFuelType(vehicle.fuelType);
+
+        onOpen();
+    };
+
+    function validate() {
+        if (!name.trim()) return "Заполните name.";
+        if (coordX === "" || isNaN(Number(coordX))) return "Координата X должна быть числом.";
+        if (coordY === "" || isNaN(Number(coordY))) return "Координата Y должна быть числом.";
+        if (!type) return "Выберите тип (type).";
+        if (!numberOfWheels || Number(numberOfWheels) <= 0) return "numberOfWheels должно быть > 0.";
+        if (!fuelConsumption || Number(fuelConsumption) <= 0) return "fuelConsumption должно быть > 0.";
+        if (!fuelType) return "Выберите fuelType.";
+        if (enginePower !== "" && Number(enginePower) <= 0) return "enginePower (если задано) должно быть > 0.";
+        if (capacity !== "" && Number(capacity) <= 0) return "capacity (если задано) должно быть > 0.";
+        if (distanceTravelled !== "" && Number(distanceTravelled) <= 0) return "distanceTravelled (если задан) должно быть > 0.";
+        return null;
+    }
+
     const handleSave = async () => {
-        // Validate
-        if (!title.trim()) return toast.warning("Заполните заголовок.");
-        if (!desc.trim()) return toast.warning("Заполните описание.");
-        if (!date) return toast.warning("Укажите дату.");
+        const err = validate();
+        if (err) return toast.warning(err);
 
-        // FormData
-        const fd = new FormData();
-        fd.append("title", title);
-        fd.append("content", desc);
-        fd.append("post_date", date.toString());
+        const payload = {
+            id: activeVehicle?.id ?? null,
+            name: name.trim(),
+            coordinates: {
+                x: coordX === "" ? null : Number(coordX),
+                y: coordY === "" ? null : Number(coordY),
+            },
+            type,
+            enginePower: enginePower === "" ? null : Number(enginePower),
+            numberOfWheels: Number(numberOfWheels),
+            capacity: capacity === "" ? null : Number(capacity),
+            distanceTravelled: distanceTravelled === "" ? null : Number(distanceTravelled),
+            fuelConsumption: Number(fuelConsumption),
+            fuelType,
+        };
 
-        const url = activePost
-            ? `${API_BASE}/api/posts/${activePost.id}`
-            : `${API_BASE}/api/posts`;
-        const method = activePost ? "PUT" : "POST";
+        const isEdit = Boolean(activeVehicle?.id);
+        const url = isEdit
+            ? `${API_BASE}/api/vehicles/${activeVehicle.id}`
+            : `${API_BASE}/api/vehicles`;
 
         try {
             const res = await fetch(url, {
-                method,
+                method: isEdit ? "PUT" : "POST",
                 credentials: "include",
-                body: fd
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify(payload),
             });
+
             if (res.ok) {
-                //
                 toast.success("Сохранено");
+                onOpenChange(false);
+                tableRef.current?.refresh(); // <- мягкая перезагрузка данных без remount
+                return;
+            }
+
+            let errorData = {};
+            try {
+                errorData = await res.json();
+            } catch (_) {
+            }
+            if (res.status === 401) {
+                setIsAuthed(false);
+                toast.error(errorData.detail || errorData.message || "Session error");
+                navigate("/login", {replace: true});
+            } else if (res.status === 409) {
+                toast.warning(errorData.message || "Конфликт данных");
+            } else {
+                toast.error(`Error: ${res.status} - ${res.statusText}`);
+            }
+        } catch (e) {
+            console.error(e);
+            toast.error("Ошибка сохранения");
+        }
+    };
+
+    const handleDelete = async () => {
+        if (!activeVehicle?.id) return;
+        try {
+            const res = await fetch(`${API_BASE}/api/vehicles/${activeVehicle.id}`, {
+                method: "DELETE",
+                credentials: "include",
+            });
+            if (res.ok || res.status === 204) {
+                toast.success("Удалено");
+                onOpenChange(false);
+                tableRef.current?.refresh();
                 return;
             }
             let errorData = {};
             try {
                 errorData = await res.json();
             } catch (_) {
-                /* если не JSON, оставляем пустой объект */
             }
-            switch (res.status) {
-                case 401:
-                    setIsAuthed(false);
-                    toast.error(errorData.detail || errorData.message || "Session error");
-                    navigate("/login", {replace: true});
-                    break;
-                case 409:
-                    toast.warning("Пост с таким Title уже существует, напишите другой.");
-                    break;
-                default:
-                    setIsAuthed?.(false);
-                    toast.error(`Error: ${res.status} - ${res.statusText}`);
-                    break;
-            }
-            // throw new Error(`HTTP ${res.status}`);
-        } catch (err) {
-            console.error(err);
-            toast.error("Ошибка сохранения");
+            toast.error(errorData.message || `Error: ${res.status}`);
+        } catch (e) {
+            console.error(e);
+            toast.error("Ошибка удаления");
         }
     };
-
-    const navigate = useNavigate();
-    const {setIsAuthed} = useAuthStore();
 
     const handleLogout = async () => {
         try {
@@ -106,12 +185,7 @@ export default function MainPage() {
                 method: "POST",
                 credentials: "include",
             });
-
-            if (!res.ok) {
-                const txt = await res.text();
-                throw new Error(`${res.status} ${txt}`);
-            }
-
+            if (!res.ok) throw new Error(`${res.status} ${await res.text()}`);
             setIsAuthed(false);
             navigate("/login", {replace: true});
             toast.success("Вы вышли из аккаунта");
@@ -127,7 +201,7 @@ export default function MainPage() {
                     <div className={styles.left}>
                         <h1 className={styles.title}>Таблица элементов</h1>
                         <div className={styles.btnWrapper}>
-                            <Button color="primary" className={styles.control} onPress={openAddModal}>
+                            <Button color="primary" className={styles.control} onPress={openNewVehicleModal}>
                                 Добавить
                             </Button>
                         </div>
@@ -146,7 +220,6 @@ export default function MainPage() {
                                     <h1 className="ml-3 font-medium">Мой профиль</h1>
                                 </div>
                             </PopoverTrigger>
-
                             <PopoverContent className="p-4 flex flex-col items-stretch gap-2">
                                 <Button color="danger" onPress={handleLogout}>Выход</Button>
                             </PopoverContent>
@@ -155,56 +228,130 @@ export default function MainPage() {
                 </div>
             </div>
 
-            <VehicleTable/>
+            <VehicleTable
+                onOpenEditVehicleModal={openEditVehicleModal}
+            />
 
             <Modal isOpen={isOpen} onOpenChange={onOpenChange} isDismissable={false}>
                 <ModalContent className={styles.postModalBody}>
                     {(close) => (
                         <>
                             <ModalHeader>
-                                {activePost ? "Редактировать пост" : "Новый пост"}
+                                {activeVehicle ? "Редактировать транспорт" : "Новый транспорт"}
                             </ModalHeader>
 
                             <ModalBody className={styles.postModalBody}>
                                 <Input
-                                    label="Заголовок"
+                                    label="Название"
                                     variant="bordered"
-                                    value={title}
-                                    onChange={(e) => setTitle(e.target.value)}
-                                    required
+                                    value={name}
+                                    onChange={(e) => setName(e.target.value)}
+                                    isRequired
                                 />
 
-                                <Textarea
-                                    label="Описание"
-                                    variant="bordered"
-                                    value={desc}
-                                    onChange={(e) => setDesc(e.target.value)}
-                                    required
-                                    minRows={4}
-                                />
+                                <div className="grid grid-cols-2 gap-3">
+                                    <Input
+                                        type="number"
+                                        label="Координата X"
+                                        variant="bordered"
+                                        value={coordX}
+                                        onChange={(e) => setCoordX(e.target.value)}
+                                        isRequired
+                                    />
+                                    <Input
+                                        type="number"
+                                        label="Координата Y"
+                                        variant="bordered"
+                                        value={coordY}
+                                        onChange={(e) => setCoordY(e.target.value)}
+                                        isRequired
+                                    />
+                                </div>
 
-                                <DateInput
-                                    label="Дата поста"
+                                <Select
+                                    label="Тип"
                                     variant="bordered"
-                                    value={date}
-                                    onChange={setDate}
-                                    placeholderValue={new CalendarDate(2025, 7, 24)}
-                                    required
-                                    className="max-w-sm"
-                                />
+                                    selectedKeys={type ? [type] : []}
+                                    onChange={(e) => setType(e.target.value)}
+                                    isRequired
+                                >
+                                    {VEHICLE_TYPES.map((t) => (
+                                        <SelectItem key={t} value={t}>{t}</SelectItem>
+                                    ))}
+                                </Select>
 
-                                {activePost && (
+                                <div className="grid grid-cols-2 gap-3">
+                                    <Input
+                                        type="number"
+                                        label="Мощность двигателя"
+                                        variant="bordered"
+                                        value={enginePower}
+                                        onChange={(e) => setEnginePower(e.target.value)}
+                                        min={0}
+                                    />
+                                    <Input
+                                        type="number"
+                                        label="Кол-во колёс"
+                                        variant="bordered"
+                                        value={numberOfWheels}
+                                        onChange={(e) => setNumberOfWheels(e.target.value)}
+                                        isRequired
+                                        min={1}
+                                    />
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-3">
+                                    <Input
+                                        type="number"
+                                        label="Вместимость"
+                                        variant="bordered"
+                                        value={capacity}
+                                        onChange={(e) => setCapacity(e.target.value)}
+                                        min={0}
+                                    />
+                                    <Input
+                                        type="number"
+                                        label="Пробег"
+                                        variant="bordered"
+                                        value={distanceTravelled}
+                                        onChange={(e) => setDistanceTravelled(e.target.value)}
+                                        min={0}
+                                    />
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-3">
+                                    <Input
+                                        type="number"
+                                        step="0.01"
+                                        label="Расход топлива"
+                                        variant="bordered"
+                                        value={fuelConsumption}
+                                        onChange={(e) => setFuelConsumption(e.target.value)}
+                                        isRequired
+                                        min={0.00001}
+                                    />
+                                    <Select
+                                        label="Тип топлива"
+                                        variant="bordered"
+                                        selectedKeys={fuelType ? [fuelType] : []}
+                                        onChange={(e) => setFuelType(e.target.value)}
+                                        isRequired
+                                    >
+                                        {FUEL_TYPES.map((f) => (
+                                            <SelectItem key={f} value={f}>{f}</SelectItem>
+                                        ))}
+                                    </Select>
+                                </div>
+
+                                {activeVehicle && (
                                     <div style={{marginTop: 12}}>
-                                        <Button
-                                            color="danger"
-                                            variant="solid"
-                                            onClick={handleDelete}
-                                        >
+                                        <Button color="danger" variant="solid" onPress={handleDelete}>
                                             Удалить
                                         </Button>
                                     </div>
                                 )}
                             </ModalBody>
+
                             <ModalFooter>
                                 <Button variant="light" onPress={close}>
                                     Отмена
@@ -217,8 +364,6 @@ export default function MainPage() {
                     )}
                 </ModalContent>
             </Modal>
-
-
         </>
     );
 }

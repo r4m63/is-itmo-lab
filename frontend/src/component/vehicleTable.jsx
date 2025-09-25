@@ -25,27 +25,166 @@ export const tableTheme = themeQuartz
     });
 
 
-const EditBtnRender = ({onOpen, rowData}) => {
-    return (
-        <div>
-            <button
-                style={{
-                    paddingInline: "15px",
-                    border: "none",
-                    backgroundColor: "#007bff",
-                    color: "white",
-                    borderRadius: "5px",
-                    cursor: "pointer",
-                }}
-                onClick={() => onOpen(rowData)}
-            >
-                Edit
-            </button>
-        </div>
-    );
-};
+export const rows = [
+    {
+        id: 1,
+        name: "Falcon X",
+        coordinates: {x: 512.4, y: 820.0},
+        creationDate: "2025-09-20T10:15:00Z",
+        type: "CAR",
+        enginePower: 180,
+        numberOfWheels: 4,
+        capacity: 5,
+        distanceTravelled: 12000,
+        fuelConsumption: 7.6,
+        fuelType: "KEROSENE",
+    },
+    {
+        id: 2,
+        name: "Sky Hammer",
+        coordinates: {x: 300.0, y: 640.5},
+        creationDate: "2025-09-18T08:00:00Z",
+        type: "HELICOPTER",
+        enginePower: 900,
+        numberOfWheels: 3,
+        capacity: 2,
+        distanceTravelled: 5400,
+        fuelConsumption: 42.3,
+        fuelType: "NUCLEAR",
+    },
+    {
+        id: 3,
+        name: "Street Bee",
+        coordinates: {x: 120.7, y: 450.2},
+        creationDate: "2025-09-10T12:30:00Z",
+        type: "MOTORCYCLE",
+        enginePower: 110,
+        numberOfWheels: 2,
+        capacity: 2,
+        distanceTravelled: 2100,
+        fuelConsumption: 3.9,
+        fuelType: "MANPOWER",
+    },
+    {
+        id: 4,
+        name: "ChopMaster",
+        coordinates: {x: 590.0, y: 900.0},
+        creationDate: "2025-09-14T17:45:00Z",
+        type: "CHOPPER",
+        enginePower: 140,
+        numberOfWheels: 2,
+        capacity: 1,
+        distanceTravelled: 980,
+        fuelConsumption: 4.5,
+        fuelType: "KEROSENE",
+    },
+    {
+        id: 5,
+        name: "Urban Rider",
+        coordinates: {x: 410.2, y: 700.0},
+        creationDate: "2025-09-12T09:20:00Z",
+        type: "CAR",
+        enginePower: 95,
+        numberOfWheels: 4,
+        capacity: 4,
+        distanceTravelled: 35000,
+        fuelConsumption: 6.2,
+        fuelType: "MANPOWER",
+    },
+    {
+        id: 6,
+        name: "Cargo Ant",
+        coordinates: {x: 50.0, y: 120.0},
+        creationDate: "2025-09-05T06:00:00Z",
+        type: "CAR",
+        enginePower: 220,
+        numberOfWheels: 6,
+        capacity: 3,
+        distanceTravelled: 76000,
+        fuelConsumption: 12.4,
+        fuelType: "KEROSENE",
+    },
+    {
+        id: 7,
+        name: "Sky Whisper",
+        coordinates: {x: 333.3, y: 910.0},
+        creationDate: "2025-09-22T13:05:00Z",
+        type: "HELICOPTER",
+        enginePower: 850,
+        numberOfWheels: 3,
+        capacity: null,               // допустимо null
+        distanceTravelled: 12500,
+        fuelConsumption: 39.8,
+        fuelType: "NUCLEAR",
+    },
+    {
+        id: 8,
+        name: "Road Wolf",
+        coordinates: {x: 600.9, y: 500.5}, // x ≤ 613
+        creationDate: "2025-09-23T07:10:00Z",
+        type: "CAR",
+        enginePower: 150,
+        numberOfWheels: 4,
+        capacity: 5,
+        distanceTravelled: null,      // допустимо null
+        fuelConsumption: 7.1,
+        fuelType: "KEROSENE",
+    },
+    {
+        id: 9,
+        name: "Blue Comet",
+        coordinates: {x: 275.0, y: 960.0}, // y ≤ 962
+        creationDate: "2025-09-24T15:30:00Z",
+        type: "MOTORCYCLE",
+        enginePower: 125,
+        numberOfWheels: 2,
+        capacity: 2,
+        distanceTravelled: 4500,
+        fuelConsumption: 4.1,
+        fuelType: "MANPOWER",
+    },
+    {
+        id: 10,
+        name: "Steel Runner",
+        coordinates: {x: 10.0, y: 50.0},
+        creationDate: "2025-09-01T11:11:00Z",
+        type: "CAR",
+        enginePower: null,            // допустимо null
+        numberOfWheels: 4,
+        capacity: 5,
+        distanceTravelled: 89000,
+        fuelConsumption: 8.0,
+        fuelType: "KEROSENE",
+    },
+    {
+        id: 11,
+        name: "Sky Lifter",
+        coordinates: {x: 450.0, y: 888.8},
+        creationDate: "2025-09-03T19:40:00Z",
+        type: "HELICOPTER",
+        enginePower: 1000,
+        numberOfWheels: 3,
+        capacity: 4,
+        distanceTravelled: 6200,
+        fuelConsumption: 45.5,
+        fuelType: "NUCLEAR",
+    },
+    {
+        id: 12,
+        name: "City Hopper",
+        coordinates: {x: 200.0, y: 600.0},
+        creationDate: "2025-09-08T21:00:00Z",
+        type: "CHOPPER",
+        enginePower: 135,
+        numberOfWheels: 2,
+        capacity: 1,
+        distanceTravelled: 3000,
+        fuelConsumption: 4.3,
+        fuelType: "KEROSENE",
+    },
+];
 
-export default function VehicleTable() {
+export default function VehicleTable({onOpenEditVehicleModal}) {
     const defaultCol = useMemo(() => ({
         filter: true,
         // editable: true,
@@ -64,6 +203,26 @@ export default function VehicleTable() {
             sortable: true,
             filter: "agNumberColumnFilter",
             floatingFilter: true
+        },
+        {
+            headerName: "Edit",
+            filter: false,
+            width: 90,
+            cellRenderer: (p) => (
+                <button
+                    style={{
+                        paddingInline: "15px",
+                        border: "none",
+                        backgroundColor: "#007bff",
+                        color: "white",
+                        borderRadius: "5px",
+                        cursor: "pointer",
+                    }}
+                    onClick={() => onOpenEditVehicleModal(p.data)}
+                >
+                    Edit
+                </button>
+            ),
         },
         {
             headerName: "Name",
@@ -173,176 +332,11 @@ export default function VehicleTable() {
             filter: "agNumberColumnFilter",
             floatingFilter: true
         },
-        {
-            headerName: "Edit",
-            filter: false,
-            width: 90,
-            cellRenderer: (p) => (<EditBtnRender onOpen={handleOpenEditPostModal} rowData={p.data}/>),
-        },
     ]);
 
-    const handleOpenEditPostModal = useCallback((row) => {
+    const handleOpenEditModal = useCallback((row) => {
         console.log("Edit:", row);
     }, []);
-
-    const rows = [
-        {
-            id: 1,
-            name: "Falcon X",
-            coordinates: {x: 512.4, y: 820.0},
-            creationDate: "2025-09-20T10:15:00Z",
-            type: "CAR",
-            enginePower: 180,
-            numberOfWheels: 4,
-            capacity: 5,
-            distanceTravelled: 12000,
-            fuelConsumption: 7.6,
-            fuelType: "KEROSENE",
-        },
-        {
-            id: 2,
-            name: "Sky Hammer",
-            coordinates: {x: 300.0, y: 640.5},
-            creationDate: "2025-09-18T08:00:00Z",
-            type: "HELICOPTER",
-            enginePower: 900,
-            numberOfWheels: 3,
-            capacity: 2,
-            distanceTravelled: 5400,
-            fuelConsumption: 42.3,
-            fuelType: "NUCLEAR",
-        },
-        {
-            id: 3,
-            name: "Street Bee",
-            coordinates: {x: 120.7, y: 450.2},
-            creationDate: "2025-09-10T12:30:00Z",
-            type: "MOTORCYCLE",
-            enginePower: 110,
-            numberOfWheels: 2,
-            capacity: 2,
-            distanceTravelled: 2100,
-            fuelConsumption: 3.9,
-            fuelType: "MANPOWER",
-        },
-        {
-            id: 4,
-            name: "ChopMaster",
-            coordinates: {x: 590.0, y: 900.0},
-            creationDate: "2025-09-14T17:45:00Z",
-            type: "CHOPPER",
-            enginePower: 140,
-            numberOfWheels: 2,
-            capacity: 1,
-            distanceTravelled: 980,
-            fuelConsumption: 4.5,
-            fuelType: "KEROSENE",
-        },
-        {
-            id: 5,
-            name: "Urban Rider",
-            coordinates: {x: 410.2, y: 700.0},
-            creationDate: "2025-09-12T09:20:00Z",
-            type: "CAR",
-            enginePower: 95,
-            numberOfWheels: 4,
-            capacity: 4,
-            distanceTravelled: 35000,
-            fuelConsumption: 6.2,
-            fuelType: "MANPOWER",
-        },
-        {
-            id: 6,
-            name: "Cargo Ant",
-            coordinates: {x: 50.0, y: 120.0},
-            creationDate: "2025-09-05T06:00:00Z",
-            type: "CAR",
-            enginePower: 220,
-            numberOfWheels: 6,
-            capacity: 3,
-            distanceTravelled: 76000,
-            fuelConsumption: 12.4,
-            fuelType: "KEROSENE",
-        },
-        {
-            id: 7,
-            name: "Sky Whisper",
-            coordinates: {x: 333.3, y: 910.0},
-            creationDate: "2025-09-22T13:05:00Z",
-            type: "HELICOPTER",
-            enginePower: 850,
-            numberOfWheels: 3,
-            capacity: null,               // допустимо null
-            distanceTravelled: 12500,
-            fuelConsumption: 39.8,
-            fuelType: "NUCLEAR",
-        },
-        {
-            id: 8,
-            name: "Road Wolf",
-            coordinates: {x: 600.9, y: 500.5}, // x ≤ 613
-            creationDate: "2025-09-23T07:10:00Z",
-            type: "CAR",
-            enginePower: 150,
-            numberOfWheels: 4,
-            capacity: 5,
-            distanceTravelled: null,      // допустимо null
-            fuelConsumption: 7.1,
-            fuelType: "KEROSENE",
-        },
-        {
-            id: 9,
-            name: "Blue Comet",
-            coordinates: {x: 275.0, y: 960.0}, // y ≤ 962
-            creationDate: "2025-09-24T15:30:00Z",
-            type: "MOTORCYCLE",
-            enginePower: 125,
-            numberOfWheels: 2,
-            capacity: 2,
-            distanceTravelled: 4500,
-            fuelConsumption: 4.1,
-            fuelType: "MANPOWER",
-        },
-        {
-            id: 10,
-            name: "Steel Runner",
-            coordinates: {x: 10.0, y: 50.0},
-            creationDate: "2025-09-01T11:11:00Z",
-            type: "CAR",
-            enginePower: null,            // допустимо null
-            numberOfWheels: 4,
-            capacity: 5,
-            distanceTravelled: 89000,
-            fuelConsumption: 8.0,
-            fuelType: "KEROSENE",
-        },
-        {
-            id: 11,
-            name: "Sky Lifter",
-            coordinates: {x: 450.0, y: 888.8},
-            creationDate: "2025-09-03T19:40:00Z",
-            type: "HELICOPTER",
-            enginePower: 1000,
-            numberOfWheels: 3,
-            capacity: 4,
-            distanceTravelled: 6200,
-            fuelConsumption: 45.5,
-            fuelType: "NUCLEAR",
-        },
-        {
-            id: 12,
-            name: "City Hopper",
-            coordinates: {x: 200.0, y: 600.0},
-            creationDate: "2025-09-08T21:00:00Z",
-            type: "CHOPPER",
-            enginePower: 135,
-            numberOfWheels: 2,
-            capacity: 1,
-            distanceTravelled: 3000,
-            fuelConsumption: 4.3,
-            fuelType: "KEROSENE",
-        },
-    ];
 
     return (
         <div
@@ -363,8 +357,8 @@ export default function VehicleTable() {
                         columnDefs={colDefs}
                         defaultColDef={defaultCol}
                         pagination
-                        paginationPageSize={200}
-                        paginationPageSizeSelector={[200, 500, 1000]}
+                        paginationPageSize={50}
+                        paginationPageSizeSelector={[50, 100]}
                     />
                 </div>
             </div>
