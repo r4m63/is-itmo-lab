@@ -125,10 +125,10 @@ export default function MainPage() {
             <div className={styles.totalwrapp}>
                 <div className={styles.top}>
                     <div className={styles.left}>
-                        <h1 className={styles.title}>Посты</h1>
+                        <h1 className={styles.title}>Таблица элементов</h1>
                         <div className={styles.btnWrapper}>
                             <Button color="primary" className={styles.control} onPress={openAddModal}>
-                                Добавить пост
+                                Добавить
                             </Button>
                         </div>
                     </div>

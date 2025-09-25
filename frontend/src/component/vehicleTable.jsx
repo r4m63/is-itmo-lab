@@ -349,14 +349,14 @@ export default function VehicleTable() {
             style={{
                 minHeight: "100vh",
                 display: "flex",
-                alignItems: "center",         // по вертикали
-                justifyContent: "center",     // по горизонтали
-                padding: "16px",              // чтобы не прилипало к краям на маленьких экранах
+                alignItems: "center",
+                justifyContent: "center",
+                padding: "16px",
                 boxSizing: "border-box",
             }}
         >
-            <div style={{ width: "95%" }}>
-                <div style={{ width: "100%", height: 800 }}>
+            <div style={{width: "95%"}}>
+                <div style={{width: "100%", height: 800}}>
                     <AgGridReact
                         theme={tableTheme}
                         rowData={rows}
