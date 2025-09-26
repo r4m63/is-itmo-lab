@@ -10,12 +10,9 @@ public class SessionService {
 
     public static final String ATTR_USER_ID = "userId";
 
-    public void startSession(HttpServletRequest req, Long userId, Integer ttlSeconds) {
+    public void startSession(HttpServletRequest req, Long userId) {
         var s = req.getSession(true);
         s.setAttribute(ATTR_USER_ID, userId);
-        if (ttlSeconds != null && ttlSeconds > 0) {
-            s.setMaxInactiveInterval(ttlSeconds);
-        }
         // JSESSIONID кука ставится контейнером автоматически
     }
 

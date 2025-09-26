@@ -20,14 +20,14 @@ public class AuthService {
     @Inject
     SessionService sessionService;
 
-    public void login(CredsDto creds, HttpServletRequest req, HttpServletResponse res) {
+    public void login(CredsDto creds, HttpServletRequest req) {
         var admin = adminDao.findByLoginAndPassHash(creds.getLogin(), creds.getPassword())
                 .orElseThrow(() -> new WebApplicationException(
                         Response.status(Response.Status.UNAUTHORIZED)
                                 .entity(Map.of("message", "Invalid credentials"))
                                 .build()
                 ));
-        sessionService.startSession(req, admin.getId(), 30 * 60);
+        sessionService.startSession(req, admin.getId());
     }
 
     public boolean isSessionActive(HttpServletRequest req) {

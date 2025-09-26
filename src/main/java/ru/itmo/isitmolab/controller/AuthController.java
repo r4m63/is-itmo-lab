@@ -32,7 +32,7 @@ public class AuthController {
     @POST
     @Path("/login")
     public Response login(@Valid CredsDto creds) {
-        authService.login(creds, request, response);
+        authService.login(creds, request);
         return Response.ok(Map.of("status", "ok")).build();
     }
 
