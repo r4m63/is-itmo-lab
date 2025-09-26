@@ -1,24 +1,28 @@
 package ru.itmo.isitmolab.dao;
 
-import jakarta.ejb.Stateless;
+import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
+import jakarta.transaction.Transactional;
 import ru.itmo.isitmolab.model.Vehicle;
 
 import java.util.Optional;
 
-@Stateless
+@ApplicationScoped
 public class VehicleDao {
 
     @PersistenceContext(unitName = "studsPU")
-    private EntityManager em;
+    EntityManager em;
 
+    @Transactional
     public Vehicle save(Vehicle v) {
         if (v.getId() == null) {
             em.persist(v);
+            em.flush();
             return v;
+        } else {
+            return em.merge(v);
         }
-        return em.merge(v);
     }
 
     public Optional<Vehicle> findById(Long id) {
@@ -26,10 +30,15 @@ public class VehicleDao {
     }
 
     public boolean existsById(Long id) {
-        return em.find(Vehicle.class, id) != null;
+        if (id == null) return false;
+        return em.createQuery("select count(v) from Vehicle v where v.id = :id", Long.class)
+                .setParameter("id", id)
+                .getSingleResult() > 0;
     }
 
+    @Transactional
     public void deleteById(Long id) {
+        if (id == null) return;
         Vehicle ref = em.find(Vehicle.class, id);
         if (ref != null) {
             em.remove(ref);

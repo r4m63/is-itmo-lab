@@ -13,7 +13,6 @@ public class SessionService {
     public void startSession(HttpServletRequest req, Long userId) {
         var s = req.getSession(true);
         s.setAttribute(ATTR_USER_ID, userId);
-        // JSESSIONID кука ставится контейнером автоматически
     }
 
     public boolean isActive(HttpServletRequest req) {

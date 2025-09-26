@@ -34,4 +34,8 @@ public class AdminDao {
         return Optional.ofNullable(em.find(Admin.class, id));
     }
 
+    public Admin getReference(Long id) {
+        return em.getReference(Admin.class, id);
+    }
+
 }

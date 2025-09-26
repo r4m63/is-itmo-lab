@@ -2,33 +2,41 @@ package ru.itmo.isitmolab.service;
 
 import jakarta.ejb.Stateless;
 import jakarta.inject.Inject;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
+import ru.itmo.isitmolab.dao.AdminDao;
 import ru.itmo.isitmolab.dao.VehicleDao;
 import ru.itmo.isitmolab.dto.VehicleDto;
+import ru.itmo.isitmolab.model.Admin;
 import ru.itmo.isitmolab.model.Vehicle;
-
 
 @Stateless
 public class VehicleService {
 
     @Inject
     VehicleDao dao;
+    @Inject
+    AdminDao adminDao;
+    @Inject
+    SessionService sessionService;
 
-    public void createNewVehicle(VehicleDto dto) {
-        Vehicle entity = VehicleDto.toEntity(dto, null);
-        Vehicle saved = dao.save(entity);
-        VehicleDto.fromEntity(saved);
+    public void createNewVehicle(VehicleDto dto, HttpServletRequest req) {
+        Long adminId = sessionService.getCurrentUserId(req);
+        Admin admin = adminDao.findById(adminId)
+                .orElseThrow(() -> new WebApplicationException("Admin not found: " + adminId, Response.Status.UNAUTHORIZED));
+
+        Vehicle v = VehicleDto.toEntity(dto, null);
+        v.setCreatedBy(admin);
+        dao.save(v);
     }
 
     public void updateVehicle(Long id, VehicleDto dto) {
         Vehicle current = dao.findById(id)
                 .orElseThrow(() -> new WebApplicationException(
                         "Vehicle not found: " + id, Response.Status.NOT_FOUND));
-
         VehicleDto.toEntity(dto, current);
-        Vehicle saved = dao.save(current);
-        VehicleDto.fromEntity(saved);
+        dao.save(current);
     }
 
     public VehicleDto getVehicleById(Long id) {
@@ -46,11 +54,3 @@ public class VehicleService {
         dao.deleteById(id);
     }
 }
-
-//return userRepository.findById(userId).orElseThrow(() ->
-//        new WebApplicationException(
-//        Response.status(Response.Status.UNAUTHORIZED)
-//                    .entity(Map.of("message", "User not found with id: " + userId))
-//        .build()
-//        )
-//                );

@@ -2,12 +2,13 @@ package ru.itmo.isitmolab.controller;
 
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.inject.Inject;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
-import jakarta.ws.rs.core.SecurityContext;
 import ru.itmo.isitmolab.dto.VehicleDto;
 import ru.itmo.isitmolab.service.VehicleService;
 
@@ -24,9 +25,15 @@ public class VehicleController {
     @Inject
     VehicleService vehicleService;
 
+    @Context
+    HttpServletRequest request;
+
+    @Context
+    HttpServletResponse response;
+
     @POST
     public Response create(@Valid VehicleDto dto) {
-        vehicleService.createNewVehicle(dto);
+        vehicleService.createNewVehicle(dto, request);
         return Response.status(Response.Status.CREATED)
                 .build();
     }
