@@ -23,8 +23,8 @@ import useAuthStore from "../store/auth.js";
 import {API_BASE} from "../../cfg.js";
 import VehicleTable from "../component/vehicleTable.jsx";
 
-const VEHICLE_TYPES = ["CAR", "TRUCK", "BUS", "PLANE", "BOAT"];
-const FUEL_TYPES = ["GASOLINE", "DIESEL", "KEROSENE", "ELECTRIC"];
+const VEHICLE_TYPES = ["CAR", "HELICOPTER", "MOTORCYCLE", "CHOPPER"];
+const FUEL_TYPES = ["KEROSENE", "MANPOWER", "NUCLEAR"];
 
 export default function MainPage() {
     const navigate = useNavigate();
@@ -319,13 +319,11 @@ export default function MainPage() {
                                 <div className="grid grid-cols-2 gap-3">
                                     <Input
                                         type="number"
-                                        step="0.01"
                                         label="Расход топлива"
                                         variant="bordered"
                                         value={fuelConsumption}
                                         onChange={(e) => setFuelConsumption(e.target.value)}
                                         isRequired
-                                        min={0.00001}
                                     />
                                     <Select
                                         label="Тип топлива"
