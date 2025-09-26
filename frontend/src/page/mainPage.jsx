@@ -26,20 +26,6 @@ import VehicleTable from "../component/vehicleTable.jsx";
 const VEHICLE_TYPES = ["CAR", "HELICOPTER", "MOTORCYCLE", "CHOPPER"];
 const FUEL_TYPES = ["KEROSENE", "MANPOWER", "NUCLEAR"];
 
-function extractIdFromLocation(locationHeader) {
-    if (!locationHeader) return null;
-    try {
-        const url = locationHeader.startsWith("http") ? new URL(locationHeader) : new URL(locationHeader, window.location.origin);
-        const parts = url.pathname.split("/").filter(Boolean);
-        const last = parts[parts.length - 1];
-        const idNum = Number(last);
-        return Number.isFinite(idNum) ? idNum : last;
-    } catch {
-        const parts = locationHeader.split("/").filter(Boolean);
-        return parts[parts.length - 1] || null;
-    }
-}
-
 export default function MainPage() {
     const navigate = useNavigate();
     const {setIsAuthed} = useAuthStore();
@@ -64,7 +50,7 @@ export default function MainPage() {
     useEffect(() => {
         (async () => {
             try {
-                const res = await fetch(`${API_BASE}/api/vehicle?offset=0&limit=1000`, {
+                const res = await fetch(`${API_BASE}/api/vehicle`, {
                     credentials: "include",
                     headers: {"Accept": "application/json"},
                 });

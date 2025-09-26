@@ -28,14 +28,7 @@ export const tableTheme = themeQuartz
 export default function VehicleTable({rows, onOpenEditVehicleModal}) {
     const defaultCol = useMemo(() => ({
         filter: true,
-        // editable: true,
-        // sortable: true,
-        // floatingFilter: true,
     }));
-    const defaultRow = {
-        //mode: "multiRow",
-        //headerCheckbox: true,
-    };
     const [colDefs, setColDefs] = useState([
         {
             headerName: "ID",
