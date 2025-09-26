@@ -6,6 +6,7 @@ import jakarta.persistence.PersistenceContext;
 import jakarta.transaction.Transactional;
 import ru.itmo.isitmolab.model.Vehicle;
 
+import java.util.List;
 import java.util.Optional;
 
 @ApplicationScoped
@@ -43,5 +44,20 @@ public class VehicleDao {
         if (ref != null) {
             em.remove(ref);
         }
+    }
+
+    public List<Vehicle> findAll() {
+        return em.createQuery(
+                "select v from Vehicle v order by v.creationDateTime desc", Vehicle.class
+        ).getResultList();
+    }
+
+    public List<Vehicle> findAll(int offset, int limit) {
+        return em.createQuery(
+                        "select v from Vehicle v order by v.creationDateTime desc", Vehicle.class
+                )
+                .setFirstResult(offset)
+                .setMaxResults(limit)
+                .getResultList();
     }
 }

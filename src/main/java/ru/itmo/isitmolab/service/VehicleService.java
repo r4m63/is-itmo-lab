@@ -11,6 +11,8 @@ import ru.itmo.isitmolab.dto.VehicleDto;
 import ru.itmo.isitmolab.model.Admin;
 import ru.itmo.isitmolab.model.Vehicle;
 
+import java.util.List;
+
 @Stateless
 public class VehicleService {
 
@@ -21,7 +23,7 @@ public class VehicleService {
     @Inject
     SessionService sessionService;
 
-    public void createNewVehicle(VehicleDto dto, HttpServletRequest req) {
+    public Long createNewVehicle(VehicleDto dto, HttpServletRequest req) {
         Long adminId = sessionService.getCurrentUserId(req);
         Admin admin = adminDao.findById(adminId)
                 .orElseThrow(() -> new WebApplicationException("Admin not found: " + adminId, Response.Status.UNAUTHORIZED));
@@ -29,6 +31,7 @@ public class VehicleService {
         Vehicle v = VehicleDto.toEntity(dto, null);
         v.setCreatedBy(admin);
         dao.save(v);
+        return v.getId();
     }
 
     public void updateVehicle(Long id, VehicleDto dto) {
@@ -52,5 +55,17 @@ public class VehicleService {
                     "Vehicle not found: " + id, Response.Status.NOT_FOUND);
         }
         dao.deleteById(id);
+    }
+
+    public List<VehicleDto> getAllVehicles() {
+        return dao.findAll().stream()
+                .map(VehicleDto::fromEntity)
+                .toList();
+    }
+
+    public List<VehicleDto> getAllVehicles(int offset, int limit) {
+        return dao.findAll(offset, limit).stream()
+                .map(VehicleDto::fromEntity)
+                .toList();
     }
 }

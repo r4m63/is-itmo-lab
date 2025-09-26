@@ -9,8 +9,13 @@ import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.UriInfo;
 import ru.itmo.isitmolab.dto.VehicleDto;
 import ru.itmo.isitmolab.service.VehicleService;
+
+import java.net.URI;
+import java.util.List;
+import java.util.Map;
 
 
 @Path("/vehicle")
@@ -21,6 +26,9 @@ public class VehicleController {
 
 //    @Context
 //    private SecurityContext securityContext;
+
+    @Context
+    UriInfo uriInfo;
 
     @Inject
     VehicleService vehicleService;
@@ -33,8 +41,9 @@ public class VehicleController {
 
     @POST
     public Response create(@Valid VehicleDto dto) {
-        vehicleService.createNewVehicle(dto, request);
+        Long id = vehicleService.createNewVehicle(dto, request);
         return Response.status(Response.Status.CREATED)
+                .entity(Map.of("id", id))
                 .build();
     }
 
@@ -42,8 +51,7 @@ public class VehicleController {
     @Path("/{id}")
     public Response update(@PathParam("id") Long id, @Valid VehicleDto dto) {
         vehicleService.updateVehicle(id, dto);
-        return Response.status(Response.Status.OK)
-                .build();
+        return Response.noContent().build();
     }
 
     @GET
@@ -60,6 +68,16 @@ public class VehicleController {
     public Response delete(@PathParam("id") Long id) {
         vehicleService.deleteVehicleById(id);
         return Response.status(Response.Status.NO_CONTENT).build();
+    }
+
+    @GET
+    public Response listAll(
+            @QueryParam("offset") @DefaultValue("0") int offset,
+            @QueryParam("limit") @DefaultValue("1000") int limit
+    ) {
+        List<VehicleDto> res = vehicleService.getAllVehicles();
+//        List<VehicleDto> res = vehicleService.getAllVehicles(offset, limit);
+        return Response.ok(res).build();
     }
 
 }

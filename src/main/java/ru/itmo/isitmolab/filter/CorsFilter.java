@@ -60,6 +60,8 @@ public class CorsFilter implements ContainerRequestFilter, ContainerResponseFilt
         responseContext.getHeaders().putSingle("Vary", "Origin");
         responseContext.getHeaders().putSingle("Access-Control-Allow-Credentials", "true");
         responseContext.getHeaders().putSingle("Access-Control-Allow-Methods", ALLOWED_METHODS);
+        responseContext.getHeaders().putSingle("Access-Control-Expose-Headers", "Location");
+
 
         String reqHeaders = requestContext.getHeaderString("Access-Control-Request-Headers");
         if (reqHeaders == null || reqHeaders.isBlank()) reqHeaders = DEFAULT_ALLOWED_HEADERS;
