@@ -61,18 +61,18 @@ export default function App() {
             <Routes>
                 {/* PUBLIC */}
                 <Route path="/login" element={
-                    // <PublicRoute>
-                    //     <LoginPage/>
-                    // </PublicRoute>
-                    <LoginPage/>
+                    <PublicRoute>
+                        <LoginPage/>
+                    </PublicRoute>
+                    // <LoginPage/>
                 }/>
 
                 {/* PRIVATE */}
                 <Route path="/" element={
-                    // <PrivateRoute>
-                    //     <MainPage/>
-                    // </PrivateRoute>
-                    <MainPage/>
+                    <PrivateRoute>
+                        <MainPage/>
+                    </PrivateRoute>
+                    // <MainPage/>
                 }/>
 
                 {/* 404 */}

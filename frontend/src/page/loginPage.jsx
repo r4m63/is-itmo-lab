@@ -9,7 +9,7 @@ import style from "./loginPage.module.css";
 import {API_BASE} from "../../cfg.js";
 
 export default function LoginPage() {
-    const [email, setEmail] = useState("");
+    const [login, setLogin] = useState("");
     const [password, setPassword] = useState("");
 
     const {setIsAuthed} = useAuthStore();
@@ -24,7 +24,7 @@ export default function LoginPage() {
                 method: "POST",
                 credentials: "include",
                 headers: {"Content-Type": "application/json"},
-                body: JSON.stringify({email, password}),
+                body: JSON.stringify({login, password}),
             });
 
             if (res.ok) {
@@ -51,8 +51,8 @@ export default function LoginPage() {
 
                 <Input
                     label="Логин"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    value={login}
+                    onChange={(e) => setLogin(e.target.value)}
                     required
                 />
 
