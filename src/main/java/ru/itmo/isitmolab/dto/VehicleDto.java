@@ -8,13 +8,12 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.extern.jackson.Jacksonized;
 import ru.itmo.isitmolab.model.Coordinates;
 import ru.itmo.isitmolab.model.FuelType;
 import ru.itmo.isitmolab.model.Vehicle;
 import ru.itmo.isitmolab.model.VehicleType;
 
-import java.util.Date;
+import java.time.LocalDateTime;
 
 @Data
 @NoArgsConstructor
@@ -96,8 +95,8 @@ public class VehicleDto {
         target.setFuelType(d.getFuelType());
 
         // подстраховка на случай отсутствия даты при апдейте
-        if (target.getCreationDate() == null) {
-            target.setCreationDate(new Date());
+        if (target.getCreationDateTime() == null) {
+            target.setCreationDateTime(LocalDateTime.now());
         }
         return target;
     }

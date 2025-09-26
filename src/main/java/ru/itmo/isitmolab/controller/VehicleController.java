@@ -18,8 +18,8 @@ import ru.itmo.isitmolab.service.VehicleService;
 @RequestScoped
 public class VehicleController {
 
-    @Context
-    private SecurityContext securityContext;
+//    @Context
+//    private SecurityContext securityContext;
 
     @Inject
     VehicleService vehicleService;
