@@ -1,6 +1,6 @@
 'use client';
 
-import {useState} from "react";
+import {useEffect, useState} from "react";
 import {
     Button,
     Input,
@@ -26,13 +26,26 @@ import VehicleTable from "../component/vehicleTable.jsx";
 const VEHICLE_TYPES = ["CAR", "HELICOPTER", "MOTORCYCLE", "CHOPPER"];
 const FUEL_TYPES = ["KEROSENE", "MANPOWER", "NUCLEAR"];
 
+function extractIdFromLocation(locationHeader) {
+    if (!locationHeader) return null;
+    try {
+        const url = locationHeader.startsWith("http") ? new URL(locationHeader) : new URL(locationHeader, window.location.origin);
+        const parts = url.pathname.split("/").filter(Boolean);
+        const last = parts[parts.length - 1];
+        const idNum = Number(last);
+        return Number.isFinite(idNum) ? idNum : last;
+    } catch {
+        const parts = locationHeader.split("/").filter(Boolean);
+        return parts[parts.length - 1] || null;
+    }
+}
+
 export default function MainPage() {
     const navigate = useNavigate();
     const {setIsAuthed} = useAuthStore();
 
     const [activeVehicle, setActiveVehicle] = useState(null);
 
-    // форма
     const [name, setName] = useState("");
     const [coordX, setCoordX] = useState("");
     const [coordY, setCoordY] = useState("");
@@ -45,6 +58,25 @@ export default function MainPage() {
     const [fuelType, setFuelType] = useState("");
 
     const {isOpen, onOpen, onOpenChange} = useDisclosure();
+
+    const [rows, setRows] = useState([]);
+
+    useEffect(() => {
+        (async () => {
+            try {
+                const res = await fetch(`${API_BASE}/api/vehicle?offset=0&limit=1000`, {
+                    credentials: "include",
+                    headers: {"Accept": "application/json"},
+                });
+                if (!res.ok) throw new Error(`${res.status}`);
+                const data = await res.json();
+                setRows(Array.isArray(data) ? data : []);
+            } catch (e) {
+                console.error(e);
+                toast.error("Не удалось загрузить данные");
+            }
+        })();
+    }, []);
 
     const openNewVehicleModal = () => {
         setActiveVehicle(null);
@@ -128,10 +160,24 @@ export default function MainPage() {
             });
 
             if (res.ok) {
+                if (isEdit) {
+                    setRows(prev =>
+                        prev.map(r => r.id === activeVehicle.id ? {
+                            ...r,
+                            ...payload,
+                            id: activeVehicle.id,
+                        } : r)
+                    );
+                } else {
+                    const {id: newId} = await res.json();
+                    setRows(prev => [{
+                        ...payload,
+                        id: newId,
+                        creationDate: new Date().toISOString(),
+                    }, ...prev]);
+                }
                 onOpenChange(false);
-                tableRef.current?.refresh(); // мягкая перезагрузка данных без remount
                 toast.success("Сохранено");
-                return;
             } else {
                 const errorData = await res.json();
                 switch (res.status) {
@@ -154,14 +200,14 @@ export default function MainPage() {
     const handleDelete = async () => {
         if (!activeVehicle?.id) return;
         try {
-            const res = await fetch(`${API_BASE}/api/vehicles/${activeVehicle.id}`, {
+            const res = await fetch(`${API_BASE}/api/vehicle/${activeVehicle.id}`, {
                 method: "DELETE",
                 credentials: "include",
             });
-            if (res.ok || res.status === 204) {
-                toast.success("Удалено");
+            if (res.ok) {
+                setRows(prev => prev.filter(r => r.id !== activeVehicle.id));
                 onOpenChange(false);
-                tableRef.current?.refresh();
+                toast.success("Удалено");
                 return;
             }
             let errorData = {};
@@ -227,6 +273,7 @@ export default function MainPage() {
 
             <VehicleTable
                 onOpenEditVehicleModal={openEditVehicleModal}
+                rows={rows}
             />
 
             <Modal isOpen={isOpen} onOpenChange={onOpenChange} isDismissable={false}>
