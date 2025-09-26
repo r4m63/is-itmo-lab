@@ -5,13 +5,11 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import lombok.*;
-import ru.itmo.isitmolab.dto.CoordinatesDto;
-import ru.itmo.isitmolab.dto.VehicleDto;
 
-import java.util.Date;
+import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "vehicles")
+@Table(name = "vehicle")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -29,11 +27,14 @@ public class Vehicle {
 
     @NotNull
     @Embedded
+    @AttributeOverrides({
+            @AttributeOverride(name = "x", column = @Column(name = "coordinates_x", nullable = false)),
+            @AttributeOverride(name = "y", column = @Column(name = "coordinates_y", nullable = false))
+    })
     private Coordinates coordinates;
 
-    @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "creation_date", nullable = false, updatable = false)
-    private Date creationDate;
+    private LocalDateTime creationDateTime;
 
     @NotNull
     @Enumerated(EnumType.STRING)
@@ -64,10 +65,15 @@ public class Vehicle {
     @Column(name = "fuel_type", nullable = false)
     private FuelType fuelType;
 
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "admin_id", nullable = false,
+            foreignKey = @ForeignKey(name = "fk_vehicle_admin"))
+    private Admin createdBy;
+
     @PrePersist
     void onCreate() {
-        if (creationDate == null) {
-            creationDate = new Date();
+        if (creationDateTime == null) {
+            creationDateTime = LocalDateTime.now();
         }
     }
 

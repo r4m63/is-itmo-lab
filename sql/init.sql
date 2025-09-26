@@ -1,8 +1,16 @@
-CREATE TABLE IF NOT EXISTS vehicles (
+CREATE TABLE IF NOT EXISTS admin (
+    id             BIGSERIAL PRIMARY KEY,
+    login          TEXT NOT NULL UNIQUE,
+    pass_hash      TEXT NOT NULL,
+    salt           TEXT NOT NULL,
+    creation_time  TIMESTAMP NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS vehicle (
     id                  BIGSERIAL PRIMARY KEY,
     name                TEXT NOT NULL CHECK (length(btrim(name)) > 0),
     coordinates_x       DOUBLE PRECISION NOT NULL CHECK (coordinates_x <= 613),
-    coordinates_y       REAL NOT NULL CHECK (coordinates_y <= 962),
+    coordinates_y       REAL             NOT NULL CHECK (coordinates_y <= 962),
     creation_date       TIMESTAMP NOT NULL DEFAULT now(),
     type                TEXT NOT NULL CHECK (type IN ('CAR','HELICOPTER','MOTORCYCLE','CHOPPER')),
     engine_power        INTEGER CHECK (engine_power > 0),
@@ -10,7 +18,8 @@ CREATE TABLE IF NOT EXISTS vehicles (
     capacity            INTEGER CHECK (capacity > 0),
     distance_travelled  INTEGER CHECK (distance_travelled > 0),
     fuel_consumption    REAL NOT NULL CHECK (fuel_consumption > 0),
-    fuel_type           TEXT NOT NULL CHECK (fuel_type IN ('KEROSENE','MANPOWER','NUCLEAR'))
+    fuel_type           TEXT NOT NULL CHECK (fuel_type IN ('KEROSENE','MANPOWER','NUCLEAR')),
+    admin_id            BIGINT NOT NULL REFERENCES admin(id) ON DELETE RESTRICT
 );
 
 -- Функция 1: id объекта с минимальным distance_travelled (любой один)
