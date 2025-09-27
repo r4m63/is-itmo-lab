@@ -10,10 +10,10 @@ import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriInfo;
+import ru.itmo.isitmolab.dto.GridRequest;
 import ru.itmo.isitmolab.dto.VehicleDto;
 import ru.itmo.isitmolab.service.VehicleService;
 
-import java.net.URI;
 import java.util.List;
 import java.util.Map;
 
@@ -76,8 +76,14 @@ public class VehicleController {
             @QueryParam("limit") @DefaultValue("1000") int limit
     ) {
         List<VehicleDto> res = vehicleService.getAllVehicles();
-//        List<VehicleDto> res = vehicleService.getAllVehicles(offset, limit);
         return Response.ok(res).build();
+    }
+
+    @POST
+    @Path("/query")
+    public Response queryVehicles(@Valid GridRequest req) {
+        var result = vehicleService.queryVehicles(req);
+        return Response.ok(result).build();
     }
 
 }
