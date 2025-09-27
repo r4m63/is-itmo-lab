@@ -31,6 +31,11 @@ public class VehicleService {
     @Inject
     SessionService sessionService;
 
+    @PersistenceContext(unitName = "studsPU")
+    private EntityManager em;
+
+    // ========= CRUD =========
+
     public Long createNewVehicle(VehicleDto dto, HttpServletRequest req) {
         Long adminId = sessionService.getCurrentUserId(req);
         Admin admin = adminDao.findById(adminId)
@@ -74,9 +79,7 @@ public class VehicleService {
         return dao.findAll(offset, limit).stream().map(VehicleDto::fromEntity).toList();
     }
 
-    // Server-side агрегация для AG Grid
-    @PersistenceContext(unitName = "studsPU")
-    private EntityManager em;
+    // ========= AG Grid server-side =========
 
     public GridResponse<VehicleDto> queryVehicles(GridRequest req) {
         int pageSize = Math.max(1, req.endRow - req.startRow);
@@ -84,7 +87,7 @@ public class VehicleService {
 
         CriteriaBuilder cb = em.getCriteriaBuilder();
 
-        // select
+        // SELECT
         CriteriaQuery<Vehicle> cq = cb.createQuery(Vehicle.class);
         Root<Vehicle> root = cq.from(Vehicle.class);
 
@@ -102,7 +105,7 @@ public class VehicleService {
             });
             cq.orderBy(orders);
         } else {
-            // дефолтная сортировка по дате создания creationDateTime
+            // дефолт по дате создания
             cq.orderBy(cb.desc(resolvePath(root, "creationDateTime")));
         }
 
@@ -111,7 +114,7 @@ public class VehicleService {
                 .setMaxResults(pageSize)
                 .getResultList();
 
-        // count
+        // COUNT
         CriteriaQuery<Long> cntq = cb.createQuery(Long.class);
         Root<Vehicle> cntRoot = cntq.from(Vehicle.class);
         List<Predicate> cntPreds = buildPredicates(cb, cntRoot, req.filterModel);
@@ -125,15 +128,12 @@ public class VehicleService {
         return new GridResponse<>(dtos, (int) total);
     }
 
-    // helpers
+    // ========= Helpers =========
 
-    // Маппинг имён колонок от фронта к полям сущности
+    // фронт => реальные поля сущности
     private static final Map<String, String> COL_MAP = new HashMap<>();
-
     static {
         COL_MAP.put("creationDate", "creationDateTime");
-
-        // вложенные координаты
         COL_MAP.put("coordinates.x", "coordinates.x");
         COL_MAP.put("coordinates.y", "coordinates.y");
     }
@@ -148,9 +148,7 @@ public class VehicleService {
         if (norm.contains(".")) {
             String[] parts = norm.split("\\.");
             Path<?> p = root;
-            for (String part : parts) {
-                p = p.get(part);
-            }
+            for (String part : parts) p = p.get(part);
             return p;
         }
         return root.get(norm);
@@ -184,44 +182,52 @@ public class VehicleService {
                         case "startsWith" -> out.add(cb.like(exp, p + "%"));
                         case "endsWith" -> out.add(cb.like(exp, "%" + p));
                         case "notEqual" -> out.add(cb.notEqual(exp, p));
-                        default -> { /* ignore */ }
+                        default -> {}
                     }
                 }
                 case "number" -> {
                     String type = (String) fm.get("type");  // equals, notEqual, lessThan, greaterThan, lessThanOrEqual, greaterThanOrEqual, inRange
                     Number f1 = toNumber(fm.get("filter"));
                     Number f2 = toNumber(fm.get("filterTo"));
-                    Expression<Number> num = path.as(Number.class);
 
-                    if (f1 == null && !"inRange".equals(type)) break;
+                    Class<?> jt = path.getJavaType();
 
-                    switch (type) {
-                        case "equals" -> out.add(cb.equal(num, f1));
-                        case "notEqual" -> out.add(cb.notEqual(num, f1));
-                        case "lessThan" -> out.add(cb.lt(num, f1));
-                        case "lessThanOrEqual" -> out.add(cb.le(num, f1));
-                        case "greaterThan" -> out.add(cb.gt(num, f1));
-                        case "greaterThanOrEqual" -> out.add(cb.ge(num, f1));
-                        case "inRange" -> {
-                            if (f1 != null && f2 != null) {
-                                out.add(cb.and(cb.ge(num, f1), cb.le(num, f2)));
-                            } else if (f1 != null) {
-                                out.add(cb.ge(num, f1));
-                            } else if (f2 != null) {
-                                out.add(cb.le(num, f2));
-                            }
-                        }
-                        default -> { /* ignore */ }
+                    if (jt == Integer.class) {
+                        Expression<Integer> num = path.as(Integer.class);
+                        Integer v1 = f1 != null ? f1.intValue() : null;
+                        Integer v2 = f2 != null ? f2.intValue() : null;
+                        addNumberPredicates(cb, out, type, num, v1, v2);
+                    } else if (jt == Long.class) {
+                        Expression<Long> num = path.as(Long.class);
+                        Long v1 = f1 != null ? f1.longValue() : null;
+                        Long v2 = f2 != null ? f2.longValue() : null;
+                        addNumberPredicates(cb, out, type, num, v1, v2);
+                    } else if (jt == Float.class) {
+                        Expression<Float> num = path.as(Float.class);
+                        Float v1 = f1 != null ? f1.floatValue() : null;
+                        Float v2 = f2 != null ? f2.floatValue() : null;
+                        addNumberPredicates(cb, out, type, num, v1, v2);
+                    } else if (jt == Double.class) {
+                        Expression<Double> num = path.as(Double.class);
+                        Double v1 = f1 != null ? f1.doubleValue() : null;
+                        Double v2 = f2 != null ? f2.doubleValue() : null;
+                        addNumberPredicates(cb, out, type, num, v1, v2);
+                    } else if (jt == BigDecimal.class) {
+                        Expression<BigDecimal> num = path.as(BigDecimal.class);
+                        BigDecimal v1 = f1 != null ? new BigDecimal(f1.toString()) : null;
+                        BigDecimal v2 = f2 != null ? new BigDecimal(f2.toString()) : null;
+                        addNumberPredicates(cb, out, type, num, v1, v2);
+                    } else {
+                        // неизвестный числовой тип — пропустим фильтр
                     }
                 }
                 case "date" -> {
-                    // AG Grid обычно шлёт YYYY-MM-DD -> day-range
                     String type = (String) fm.get("type"); // equals, lessThan, greaterThan, inRange
                     String d1s = (String) fm.get("dateFrom");
                     String d2s = (String) fm.get("dateTo");
                     if (d1s == null || d1s.isBlank()) break;
 
-                    // Фильтровать имеет смысл только если поле действительно LocalDateTime
+                    // фильтруем только если поле LocalDateTime
                     if (!LocalDateTime.class.isAssignableFrom(path.getJavaType())) break;
 
                     LocalDate d1 = LocalDate.parse(d1s);
@@ -243,7 +249,7 @@ public class VehicleService {
                             LocalDateTime end = d2.plusDays(1).atStartOfDay();
                             out.add(cb.between(dt, start, end));
                         }
-                        default -> { /* ignore */ }
+                        default -> {}
                     }
                 }
                 case "set" -> {
@@ -257,10 +263,41 @@ public class VehicleService {
                     }
                     out.add(in);
                 }
-                default -> { /* ignore unknown filterType */ }
+                default -> {}
             }
         }
         return out;
+    }
+
+    /** Универсальная сборка предикатов для числового поля конкретного типа. */
+    private static <T extends Number & Comparable<T>> void addNumberPredicates(
+            CriteriaBuilder cb,
+            List<Predicate> out,
+            String type,
+            Expression<T> num,
+            T v1,
+            T v2
+    ) {
+        if (v1 == null && !"inRange".equals(type)) return;
+
+        switch (type) {
+            case "equals"             -> out.add(cb.equal(num, v1));
+            case "notEqual"           -> out.add(cb.notEqual(num, v1));
+            case "lessThan"           -> out.add(cb.lessThan(num, v1));
+            case "lessThanOrEqual"    -> out.add(cb.lessThanOrEqualTo(num, v1));
+            case "greaterThan"        -> out.add(cb.greaterThan(num, v1));
+            case "greaterThanOrEqual" -> out.add(cb.greaterThanOrEqualTo(num, v1));
+            case "inRange" -> {
+                if (v1 != null && v2 != null) {
+                    out.add(cb.and(cb.greaterThanOrEqualTo(num, v1), cb.lessThanOrEqualTo(num, v2)));
+                } else if (v1 != null) {
+                    out.add(cb.greaterThanOrEqualTo(num, v1));
+                } else if (v2 != null) {
+                    out.add(cb.lessThanOrEqualTo(num, v2));
+                }
+            }
+            default -> {}
+        }
     }
 
     @SuppressWarnings("unchecked")
@@ -271,6 +308,7 @@ public class VehicleService {
         if (t.equals(Long.class)) return Long.valueOf(value);
         if (t.equals(Double.class)) return Double.valueOf(value);
         if (t.equals(Float.class)) return Float.valueOf(value);
+        if (t.equals(BigDecimal.class)) return new BigDecimal(value);
         return value;
     }
 
