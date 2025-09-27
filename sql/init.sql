@@ -22,23 +22,79 @@ CREATE TABLE IF NOT EXISTS vehicle (
     admin_id            BIGINT NOT NULL REFERENCES admin(id) ON DELETE RESTRICT
 );
 
--- Функция 1: id объекта с минимальным distance_travelled (любой один)
-CREATE OR REPLACE FUNCTION vehicle_min_distance_id()
-RETURNS BIGINT LANGUAGE sql AS $$
-  SELECT id FROM vehicle
+-- 1) Любой объект с минимальным distance_travelled (среди NOT NULL)
+CREATE OR REPLACE FUNCTION fn_vehicle_min_distance()
+RETURNS SETOF vehicle
+LANGUAGE sql
+STABLE
+AS $$
+  SELECT *
+  FROM vehicle
   WHERE distance_travelled IS NOT NULL
-  ORDER BY distance_travelled ASC, id ASC
-  LIMIT 1;
+  ORDER BY distance_travelled ASC
+  LIMIT 1
 $$;
 
--- Функция 2: количество объектов с fuel_consumption > t
-CREATE OR REPLACE FUNCTION vehicle_count_fuel_gt(t REAL)
-RETURNS BIGINT LANGUAGE sql AS $$
-  SELECT COUNT(*) FROM vehicle WHERE fuel_consumption > t;
+-- 2) Кол-во с fuel_consumption > заданного
+CREATE OR REPLACE FUNCTION fn_vehicle_count_fuel_gt(p_value real)
+RETURNS bigint
+LANGUAGE sql
+STABLE
+AS $$
+  SELECT COUNT(*)::bigint
+  FROM vehicle
+  WHERE fuel_consumption > p_value
 $$;
 
--- Функция 3: ids объектов с fuel_consumption > t (для выборки списком)
-CREATE OR REPLACE FUNCTION vehicle_ids_fuel_gt(t REAL)
-RETURNS SETOF BIGINT LANGUAGE sql AS $$
-  SELECT id FROM vehicle WHERE fuel_consumption > t ORDER BY id;
+-- 3) Список с fuel_consumption > заданного
+CREATE OR REPLACE FUNCTION fn_vehicle_list_fuel_gt(p_value real)
+RETURNS SETOF vehicle
+LANGUAGE sql
+STABLE
+AS $$
+  SELECT *
+  FROM vehicle
+  WHERE fuel_consumption > p_value
+  ORDER BY id
 $$;
+
+-- 4) Найти все ТС заданного типа (поле type хранится как TEXT)
+CREATE OR REPLACE FUNCTION fn_vehicle_list_by_type(p_type text)
+RETURNS SETOF vehicle
+LANGUAGE sql
+STABLE
+AS $$
+  SELECT *
+  FROM vehicle
+  WHERE type = p_type
+  ORDER BY id
+$$;
+
+-- 5) Найти все ТС с мощностью в диапазоне [min, max] (границы включительно, null-ы игнорим)
+CREATE OR REPLACE FUNCTION fn_vehicle_list_engine_between(p_min int, p_max int)
+RETURNS SETOF vehicle
+LANGUAGE sql
+STABLE
+AS $$
+  SELECT *
+  FROM vehicle
+  WHERE engine_power IS NOT NULL
+    AND engine_power >= p_min
+    AND engine_power <= p_max
+  ORDER BY engine_power, id
+$$;
+
+-- 1
+select * from fn_vehicle_min_distance();
+
+-- 2
+select fn_vehicle_count_fuel_gt(10.0);
+
+-- 3
+select * from fn_vehicle_list_fuel_gt(15.5);
+
+-- 4
+select * from fn_vehicle_list_by_type('CAR');
+
+-- 5
+select * from fn_vehicle_list_engine_between(100, 200);
