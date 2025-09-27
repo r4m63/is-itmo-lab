@@ -1,6 +1,6 @@
 'use client';
 
-import {useEffect, useState} from "react";
+import {useState} from "react";
 import {
     Button,
     Input,
@@ -45,24 +45,8 @@ export default function MainPage() {
 
     const {isOpen, onOpen, onOpenChange} = useDisclosure();
 
-    const [rows, setRows] = useState([]);
-
-    useEffect(() => {
-        (async () => {
-            try {
-                const res = await fetch(`${API_BASE}/api/vehicle`, {
-                    credentials: "include",
-                    headers: {"Accept": "application/json"},
-                });
-                if (!res.ok) throw new Error(`${res.status}`);
-                const data = await res.json();
-                setRows(Array.isArray(data) ? data : []);
-            } catch (e) {
-                console.error(e);
-                toast.error("Не удалось загрузить данные");
-            }
-        })();
-    }, []);
+    const [refreshGrid, setRefreshGrid] = useState(() => () => {
+    });
 
     const openNewVehicleModal = () => {
         setActiveVehicle(null);
@@ -146,22 +130,7 @@ export default function MainPage() {
             });
 
             if (res.ok) {
-                if (isEdit) {
-                    setRows(prev =>
-                        prev.map(r => r.id === activeVehicle.id ? {
-                            ...r,
-                            ...payload,
-                            id: activeVehicle.id,
-                        } : r)
-                    );
-                } else {
-                    const {id: newId} = await res.json();
-                    setRows(prev => [{
-                        ...payload,
-                        id: newId,
-                        creationDate: new Date().toISOString(),
-                    }, ...prev]);
-                }
+                refreshGrid();
                 onOpenChange(false);
                 toast.success("Сохранено");
             } else {
@@ -191,7 +160,7 @@ export default function MainPage() {
                 credentials: "include",
             });
             if (res.ok) {
-                setRows(prev => prev.filter(r => r.id !== activeVehicle.id));
+                refreshGrid();
                 onOpenChange(false);
                 toast.success("Удалено");
                 return;
@@ -259,7 +228,7 @@ export default function MainPage() {
 
             <VehicleTable
                 onOpenEditVehicleModal={openEditVehicleModal}
-                rows={rows}
+                onReadyRefresh={(fn) => setRefreshGrid(() => fn)}
             />
 
             <Modal isOpen={isOpen} onOpenChange={onOpenChange} isDismissable={false}>

@@ -1,8 +1,9 @@
 'use client';
-import React, {useMemo, useState} from "react";
-import {AllCommunityModule, colorSchemeDark, iconSetMaterial, ModuleRegistry, themeQuartz} from "ag-grid-community";
-import {AgGridReact} from "ag-grid-react";
 
+import React, {useCallback, useMemo, useRef} from "react";
+import {AgGridReact} from "ag-grid-react";
+import {AllCommunityModule, colorSchemeDark, iconSetMaterial, ModuleRegistry, themeQuartz} from "ag-grid-community";
+import {API_BASE} from "../../cfg.js";
 
 ModuleRegistry.registerModules([AllCommunityModule]);
 
@@ -15,69 +16,52 @@ export const tableTheme = themeQuartz
         headerBackgroundColor: "#111827",
         headerTextColor: "#e5e7eb",
         oddRowBackgroundColor: "#0b1326",
-
         accentColor: "#60a5fa",
         headerColumnResizeHandleColor: "#60a5fa",
-
         borderColor: "#1e293b",
         rowHoverColor: "#1f2937",
         selectedRowBackgroundColor: "#1e3a8a",
     });
 
+export default function VehicleTable({onOpenEditVehicleModal, onReadyRefresh}) {
+    const gridApiRef = useRef(null);
 
-export default function VehicleTable({rows, onOpenEditVehicleModal}) {
-    const defaultCol = useMemo(() => ({
-        filter: true,
-    }));
-    const [colDefs, setColDefs] = useState([
+    const colDefs = useMemo(() => ([
         {
             headerName: "ID",
             field: "id",
             width: 100,
             sortable: true,
+            sort: "desc",
             filter: "agNumberColumnFilter",
             floatingFilter: true
         },
         {
-            headerName: "Edit",
-            filter: false,
-            width: 90,
+            headerName: "Edit", filter: false, width: 90,
             cellRenderer: (p) => (
                 <button
                     style={{
-                        paddingInline: "15px",
+                        paddingInline: 15,
                         border: "none",
-                        backgroundColor: "#007bff",
-                        color: "white",
-                        borderRadius: "5px",
-                        cursor: "pointer",
+                        background: "#007bff",
+                        color: "#fff",
+                        borderRadius: 5,
+                        cursor: "pointer"
                     }}
-                    onClick={() => onOpenEditVehicleModal(p.data)}
+                    onClick={() => onOpenEditVehicleModal?.(p.data)}
                 >
                     Edit
                 </button>
             ),
         },
-        {
-            headerName: "Name",
-            field: "name",
-            sortable: true,
-            filter: "agTextColumnFilter",
-            floatingFilter: true
-        },
+        {headerName: "Name", field: "name", sortable: true, filter: "agTextColumnFilter", floatingFilter: true},
         {
             headerName: "Type",
             field: "type",
             width: 160,
             sortable: true,
             filter: "agTextColumnFilter",
-            floatingFilter: true,
-            filterParams: {
-                values: ["CAR", "HELICOPTER", "MOTORCYCLE", "CHOPPER"],
-                defaultToNothingSelected: false,
-                suppressMiniFilter: true,
-                debounceMs: 0,
-            },
+            floatingFilter: true
         },
         {
             headerName: "Fuel Type",
@@ -85,22 +69,15 @@ export default function VehicleTable({rows, onOpenEditVehicleModal}) {
             width: 160,
             sortable: true,
             filter: "agTextColumnFilter",
-            floatingFilter: true,
-            filterParams: {
-                values: ["KEROSENE", "MANPOWER", "NUCLEAR"],
-                defaultToNothingSelected: false,
-                suppressMiniFilter: true,
-                debounceMs: 0,
-            },
+            floatingFilter: true
         },
         {
             headerName: "Creation Date",
-            field: "creationDate",
+            field: "creationDate", // DTO поле: creationDate (на бэке маппится на creationDateTime)
             width: 190,
             sortable: true,
             filter: "agDateColumnFilter",
             floatingFilter: true,
-            sort: "desc",
             valueFormatter: (p) => (p.value ? new Date(p.value).toLocaleString() : ""),
         },
         {
@@ -113,7 +90,7 @@ export default function VehicleTable({rows, onOpenEditVehicleModal}) {
                     width: 110,
                     sortable: true,
                     filter: "agNumberColumnFilter",
-                    floatingFilter: true,
+                    floatingFilter: true
                 },
                 {
                     headerName: "Y",
@@ -122,7 +99,7 @@ export default function VehicleTable({rows, onOpenEditVehicleModal}) {
                     width: 110,
                     sortable: true,
                     filter: "agNumberColumnFilter",
-                    floatingFilter: true,
+                    floatingFilter: true
                 },
             ],
         },
@@ -166,33 +143,88 @@ export default function VehicleTable({rows, onOpenEditVehicleModal}) {
             filter: "agNumberColumnFilter",
             floatingFilter: true
         },
-    ]);
+    ]), [onOpenEditVehicleModal]);
+
+    const mapSortModel = (sm = []) => sm.map(s => ({colId: s.colId, sort: s.sort}));
+
+    const makeDatasource = useCallback(() => ({
+        getRows: async (params) => {
+            try {
+                const body = {
+                    startRow: params.startRow,
+                    endRow: params.endRow,
+                    sortModel: mapSortModel(params.sortModel),
+                    filterModel: params.filterModel || {},
+                };
+
+                const res = await fetch(`${API_BASE}/api/vehicle/query`, {
+                    method: "POST",
+                    credentials: "include",
+                    headers: {"Content-Type": "application/json", "Accept": "application/json"},
+                    body: JSON.stringify(body),
+                });
+
+                if (!res.ok) {
+                    params.failCallback();
+                    return;
+                }
+                const data = await res.json();
+                params.successCallback(data.rows || [], data.lastRow ?? 0);
+            } catch (e) {
+                console.error(e);
+                params.failCallback();
+            }
+        }
+    }), []);
+
+    const setDatasource = useCallback(() => {
+        if (!gridApiRef.current) return;
+        const ds = makeDatasource();
+        gridApiRef.current.setGridOption('datasource', ds);
+        gridApiRef.current.purgeInfiniteCache();
+    }, [makeDatasource]);
+
+    const exposeRefresh = useCallback(() => {
+        if (!onReadyRefresh) return;
+        onReadyRefresh(() => {
+            if (!gridApiRef.current) return;
+            gridApiRef.current.purgeInfiniteCache();
+        });
+    }, [onReadyRefresh]);
+
+    const onGridReady = useCallback((e) => {
+        gridApiRef.current = e.api;
+        setDatasource();
+        exposeRefresh();
+    }, [setDatasource, exposeRefresh]);
+
+    const onFilterChanged = useCallback(() => {
+        if (gridApiRef.current) gridApiRef.current.purgeInfiniteCache();
+    }, []);
+    const onSortChanged = useCallback(() => {
+        if (gridApiRef.current) gridApiRef.current.purgeInfiniteCache();
+    }, []);
 
     return (
-        <div
-            style={{
-                minHeight: "100vh",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                padding: "16px",
-                boxSizing: "border-box",
-            }}
-        >
+        <div style={{minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: 16}}>
             <div style={{width: "95%"}}>
                 <div style={{width: "100%", height: 800}}>
                     <AgGridReact
                         theme={tableTheme}
-                        rowData={rows}
                         columnDefs={colDefs}
-                        defaultColDef={defaultCol}
+                        rowModelType="infinite"
+                        cacheBlockSize={50}
+                        maxBlocksInCache={2}
                         pagination
                         paginationPageSize={50}
-                        paginationPageSizeSelector={[50, 100]}
+                        onGridReady={onGridReady}
+                        onFilterChanged={onFilterChanged}
+                        onSortChanged={onSortChanged}
+                        suppressMultiSort={false}
+                        defaultColDef={{filter: true, sortable: true, floatingFilter: true}}
                     />
                 </div>
             </div>
         </div>
     );
-
-};
+}
