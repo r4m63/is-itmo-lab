@@ -14,7 +14,7 @@ import {
     PopoverTrigger,
     Select,
     SelectItem,
-    useDisclosure,
+    useDisclosure
 } from "@heroui/react";
 import {toast} from "sonner";
 import styles from "./mainPage.module.css";
@@ -44,13 +44,11 @@ export default function MainPage() {
     const [fuelType, setFuelType] = useState("");
 
     const {isOpen, onOpen, onOpenChange} = useDisclosure();
-
     const [refreshGrid, setRefreshGrid] = useState(() => () => {
     });
 
     const openNewVehicleModal = () => {
         setActiveVehicle(null);
-
         setName("");
         setCoordX("");
         setCoordY("");
@@ -61,24 +59,21 @@ export default function MainPage() {
         setDistanceTravelled("");
         setFuelConsumption("");
         setFuelType("");
-
         onOpen();
     };
 
     const openEditVehicleModal = async (vehicle) => {
         setActiveVehicle(vehicle);
-
         setName(vehicle.name);
         setCoordX(vehicle.coordinates.x);
         setCoordY(vehicle.coordinates.y);
         setType(vehicle.type);
-        setEnginePower(vehicle.enginePower);
+        setEnginePower(vehicle.enginePower ?? "");
         setNumberOfWheels(vehicle.numberOfWheels);
-        setCapacity(vehicle.capacity);
-        setDistanceTravelled(vehicle.distanceTravelled);
+        setCapacity(vehicle.capacity ?? "");
+        setDistanceTravelled(vehicle.distanceTravelled ?? "");
         setFuelConsumption(vehicle.fuelConsumption);
         setFuelType(vehicle.fuelType);
-
         onOpen();
     };
 
@@ -130,11 +125,11 @@ export default function MainPage() {
             });
 
             if (res.ok) {
-                refreshGrid();
+                refreshGrid();      // обновляем таблицу (серверная пагинация/фильтры остаются)
                 onOpenChange(false);
                 toast.success("Сохранено");
             } else {
-                const errorData = await res.json();
+                const errorData = await res.json().catch(() => ({}));
                 switch (res.status) {
                     case 401:
                         setIsAuthed(false);
@@ -168,7 +163,7 @@ export default function MainPage() {
             let errorData = {};
             try {
                 errorData = await res.json();
-            } catch (_) {
+            } catch {
             }
             toast.error(errorData.message || `Error: ${res.status}`);
         } catch (e) {
@@ -192,6 +187,117 @@ export default function MainPage() {
         }
     };
 
+    // PRESETS хэндлеры
+
+    const [tableControls, setTableControls] = useState(null);
+
+    const {
+        isOpen: isPresetOpen,
+        onOpen: onPresetOpen,
+        onOpenChange: onPresetOpenChange
+    } = useDisclosure();
+
+    const [presetFuelGt, setPresetFuelGt] = useState("");
+    const [presetType, setPresetType] = useState("");
+    const [presetEngMin, setPresetEngMin] = useState("");
+    const [presetEngMax, setPresetEngMax] = useState("");
+
+    // 1) Один с минимальным distanceTravelled — открываем форму редактирования с этим объектом
+    const presetMinDistance = async () => {
+        try {
+            const res = await fetch(`${API_BASE}/api/vehicle/special/min-distance`, {
+                credentials: "include",
+                headers: {"Accept": "application/json"},
+            });
+            if (res.status === 204) {
+                toast.info("Нет объектов с заполненным distanceTravelled");
+                return;
+            }
+            if (!res.ok) throw new Error(`${res.status}`);
+            const dto = await res.json();
+            onPresetOpenChange(false);     // закрыть окно пресетов
+            await openEditVehicleModal(dto);
+            toast.success("Загружен объект с минимальным пробегом");
+        } catch (e) {
+            console.error(e);
+            toast.error("Не удалось получить объект");
+        }
+    };
+
+    // 2) Количество с расходом топлива > X — просто показать число
+    const presetCountFuelGt = async () => {
+        const v = Number(presetFuelGt);
+        if (isNaN(v) || v <= 0) return toast.warning("Введите корректное значение топлива > 0");
+        try {
+            const res = await fetch(`${API_BASE}/api/vehicle/special/count-fuel-gt?v=${encodeURIComponent(v)}`, {
+                credentials: "include",
+                headers: {"Accept": "application/json"},
+            });
+            if (!res.ok) throw new Error(`${res.status}`);
+            const data = await res.json(); // {count: number}
+            toast.info(`Найдено: ${data.count}`);
+        } catch (e) {
+            console.error(e);
+            toast.error("Не удалось выполнить подсчет");
+        }
+    };
+
+    // 3) Список с расходом топлива > X — просто запросим и покажем сколько пришло; таблицу не перетираем
+    const presetListFuelGt = async () => {
+        const v = Number(presetFuelGt);
+        if (isNaN(v) || v <= 0) return toast.warning("Введите корректное значение топлива > 0");
+        try {
+            const res = await fetch(`${API_BASE}/api/vehicle/special/list-fuel-gt?v=${encodeURIComponent(v)}`, {
+                credentials: "include",
+                headers: {"Accept": "application/json"},
+            });
+            if (!res.ok) throw new Error(`${res.status}`);
+            const list = await res.json();
+            toast.success(`Получено объектов: ${Array.isArray(list) ? list.length : 0}`);
+        } catch (e) {
+            console.error(e);
+            toast.error("Не удалось получить список");
+        }
+    };
+
+    // 4) Список по типу
+    const presetListByType = async () => {
+        if (!presetType) return toast.warning("Выберите тип");
+        try {
+            const res = await fetch(`${API_BASE}/api/vehicle/special/by-type?type=${encodeURIComponent(presetType)}`, {
+                credentials: "include",
+                headers: {"Accept": "application/json"},
+            });
+            if (!res.ok) throw new Error(`${res.status}`);
+            const list = await res.json();
+            toast.success(`По типу ${presetType}: ${Array.isArray(list) ? list.length : 0}`);
+        } catch (e) {
+            console.error(e);
+            toast.error("Не удалось получить по типу");
+        }
+    };
+
+    // 5) Диапазон мощности
+    const presetListByEngineRange = async () => {
+        const min = Number(presetEngMin);
+        const max = Number(presetEngMax);
+        if (isNaN(min) || isNaN(max) || min < 0 || max < 0 || min > max) {
+            return toast.warning("Введите корректный диапазон мощности (min ≤ max, ≥ 0)");
+        }
+        try {
+            const res = await fetch(`${API_BASE}/api/vehicle/special/by-engine-range?min=${min}&max=${max}`, {
+                credentials: "include",
+                headers: {"Accept": "application/json"},
+            });
+            if (!res.ok) throw new Error(`${res.status}`);
+            const list = await res.json();
+            toast.success(`В диапазоне ${min}–${max}: ${Array.isArray(list) ? list.length : 0}`);
+        } catch (e) {
+            console.error(e);
+            toast.error("Не удалось получить по диапазону");
+        }
+    };
+
     return (
         <>
             <div className={styles.totalwrapp}>
@@ -202,19 +308,18 @@ export default function MainPage() {
                             <Button color="primary" className={styles.control} onPress={openNewVehicleModal}>
                                 Добавить
                             </Button>
+
+                            <Button color="primary" className={styles.control} onPress={onPresetOpen}>
+                                Пресеты
+                            </Button>
                         </div>
                     </div>
                     <div className={styles.right}>
                         <Popover placement="bottom-end" showArrow>
                             <PopoverTrigger>
                                 <div className={styles.profileWrapp}>
-                                    <img
-                                        src="/user.png"
-                                        alt="User avatar"
-                                        width={40}
-                                        height={40}
-                                        className="rounded-full object-cover"
-                                    />
+                                    <img src="/user.png" alt="User avatar" width={40} height={40}
+                                         className="rounded-full object-cover"/>
                                     <h1 className="ml-3 font-medium">Мой профиль</h1>
                                 </div>
                             </PopoverTrigger>
@@ -229,6 +334,7 @@ export default function MainPage() {
             <VehicleTable
                 onOpenEditVehicleModal={openEditVehicleModal}
                 onReadyRefresh={(fn) => setRefreshGrid(() => fn)}
+                onReadyControls={(controls) => setTableControls(controls)}
             />
 
             <Modal isOpen={isOpen} onOpenChange={onOpenChange} isDismissable={false}>
@@ -240,100 +346,46 @@ export default function MainPage() {
                             </ModalHeader>
 
                             <ModalBody className={styles.postModalBody}>
-                                <Input
-                                    label="Название"
-                                    variant="bordered"
-                                    value={name}
-                                    onChange={(e) => setName(e.target.value)}
-                                    isRequired
-                                />
+                                <Input label="Название" variant="bordered" value={name}
+                                       onChange={(e) => setName(e.target.value)} isRequired/>
 
                                 <div className="grid grid-cols-2 gap-3">
-                                    <Input
-                                        type="number"
-                                        label="Координата X"
-                                        variant="bordered"
-                                        value={coordX}
-                                        onChange={(e) => setCoordX(e.target.value)}
-                                        isRequired
-                                    />
-                                    <Input
-                                        type="number"
-                                        label="Координата Y"
-                                        variant="bordered"
-                                        value={coordY}
-                                        onChange={(e) => setCoordY(e.target.value)}
-                                        isRequired
-                                    />
+                                    <Input type="number" label="Координата X" variant="bordered" value={coordX}
+                                           onChange={(e) => setCoordX(e.target.value)} isRequired/>
+                                    <Input type="number" label="Координата Y" variant="bordered" value={coordY}
+                                           onChange={(e) => setCoordY(e.target.value)} isRequired/>
                                 </div>
 
-                                <Select
-                                    label="Тип"
-                                    variant="bordered"
-                                    selectedKeys={type ? [type] : []}
-                                    onChange={(e) => setType(e.target.value)}
-                                    isRequired
-                                >
+                                <Select label="Тип" variant="bordered"
+                                        selectedKeys={type ? [type] : []}
+                                        onChange={(e) => setType(e.target.value)} isRequired>
                                     {VEHICLE_TYPES.map((t) => (
                                         <SelectItem key={t} value={t}>{t}</SelectItem>
                                     ))}
                                 </Select>
 
                                 <div className="grid grid-cols-2 gap-3">
-                                    <Input
-                                        type="number"
-                                        label="Мощность двигателя"
-                                        variant="bordered"
-                                        value={enginePower}
-                                        onChange={(e) => setEnginePower(e.target.value)}
-                                        min={0}
-                                    />
-                                    <Input
-                                        type="number"
-                                        label="Кол-во колёс"
-                                        variant="bordered"
-                                        value={numberOfWheels}
-                                        onChange={(e) => setNumberOfWheels(e.target.value)}
-                                        isRequired
-                                        min={1}
-                                    />
+                                    <Input type="number" label="Мощность двигателя" variant="bordered"
+                                           value={enginePower}
+                                           onChange={(e) => setEnginePower(e.target.value)} min={0}/>
+                                    <Input type="number" label="Кол-во колёс" variant="bordered" value={numberOfWheels}
+                                           onChange={(e) => setNumberOfWheels(e.target.value)} isRequired min={1}/>
                                 </div>
 
                                 <div className="grid grid-cols-2 gap-3">
-                                    <Input
-                                        type="number"
-                                        label="Вместимость"
-                                        variant="bordered"
-                                        value={capacity}
-                                        onChange={(e) => setCapacity(e.target.value)}
-                                        min={0}
-                                    />
-                                    <Input
-                                        type="number"
-                                        label="Пробег"
-                                        variant="bordered"
-                                        value={distanceTravelled}
-                                        onChange={(e) => setDistanceTravelled(e.target.value)}
-                                        min={0}
-                                    />
+                                    <Input type="number" label="Вместимость" variant="bordered" value={capacity}
+                                           onChange={(e) => setCapacity(e.target.value)} min={0}/>
+                                    <Input type="number" label="Пробег" variant="bordered" value={distanceTravelled}
+                                           onChange={(e) => setDistanceTravelled(e.target.value)} min={0}/>
                                 </div>
 
                                 <div className="grid grid-cols-2 gap-3">
-                                    <Input
-                                        type="number"
-                                        label="Расход топлива"
-                                        variant="bordered"
-                                        value={fuelConsumption}
-                                        onChange={(e) => setFuelConsumption(e.target.value)}
-                                        isRequired
-                                    />
-                                    <Select
-                                        label="Тип топлива"
-                                        variant="bordered"
-                                        selectedKeys={fuelType ? [fuelType] : []}
-                                        onChange={(e) => setFuelType(e.target.value)}
-                                        isRequired
-                                    >
+                                    <Input type="number" label="Расход топлива" variant="bordered"
+                                           value={fuelConsumption}
+                                           onChange={(e) => setFuelConsumption(e.target.value)} isRequired/>
+                                    <Select label="Тип топлива" variant="bordered"
+                                            selectedKeys={fuelType ? [fuelType] : []}
+                                            onChange={(e) => setFuelType(e.target.value)} isRequired>
                                         {FUEL_TYPES.map((f) => (
                                             <SelectItem key={f} value={f}>{f}</SelectItem>
                                         ))}
@@ -350,12 +402,107 @@ export default function MainPage() {
                             </ModalBody>
 
                             <ModalFooter>
-                                <Button variant="light" onPress={close}>
-                                    Отмена
-                                </Button>
-                                <Button color="primary" onPress={handleSave}>
-                                    Сохранить
-                                </Button>
+                                <Button variant="light" onPress={close}>Отмена</Button>
+                                <Button color="primary" onPress={handleSave}>Сохранить</Button>
+                            </ModalFooter>
+                        </>
+                    )}
+                </ModalContent>
+            </Modal>
+
+            <Modal isOpen={isPresetOpen} onOpenChange={onPresetOpenChange} isDismissable>
+                <ModalContent>
+                    {(close) => (
+                        <>
+                            <ModalHeader>Спец-операции (пресеты)</ModalHeader>
+                            <ModalBody className="flex flex-col gap-5">
+                                {/* 1) Один с минимальным distanceTravelled */}
+                                <div className="space-y-2">
+                                    <div className="text-sm font-medium opacity-80">
+                                        Вернуть один объект с минимальным distanceTravelled
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                        <Button onPress={presetMinDistance}>Выполнить</Button>
+                                    </div>
+                                </div>
+
+                                {/* 2) Кол-во fuel > X */}
+                                <div className="space-y-2">
+                                    <div className="text-sm font-medium opacity-80">
+                                        Вернуть количество объектов, у которых fuelConsumption &gt; X
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                        <Input
+                                            label="X (fuelConsumption)"
+                                            type="number"
+                                            value={presetFuelGt}
+                                            onChange={(e) => setPresetFuelGt(e.target.value)}
+                                        />
+                                        <Button onPress={presetCountFuelGt}>Выполнить</Button>
+                                    </div>
+                                </div>
+
+                                {/* 3) Массив объектов fuel > X */}
+                                <div className="space-y-2">
+                                    <div className="text-sm font-medium opacity-80">
+                                        Вернуть массив объектов, у которых fuelConsumption &gt; X
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                        <Input
+                                            label="X (fuelConsumption)"
+                                            type="number"
+                                            value={presetFuelGt}
+                                            onChange={(e) => setPresetFuelGt(e.target.value)}
+                                        />
+                                        <Button onPress={presetListFuelGt}>Выполнить</Button>
+                                    </div>
+                                </div>
+
+                                {/* 4) Найти по типу */}
+                                <div className="space-y-2">
+                                    <div className="text-sm font-medium opacity-80">
+                                        Найти все транспортные средства заданного типа
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                        <Select
+                                            label="Тип ТС"
+                                            selectedKeys={presetType ? [presetType] : []}
+                                            onChange={(e) => setPresetType(e.target.value)}
+                                            className="min-w-[180px]"
+                                        >
+                                            {VEHICLE_TYPES.map(t => (
+                                                <SelectItem key={t} value={t}>{t}</SelectItem>
+                                            ))}
+                                        </Select>
+                                        <Button onPress={presetListByType}>Выполнить</Button>
+                                    </div>
+                                </div>
+
+                                {/* 5) Диапазон мощности */}
+                                <div className="space-y-2">
+                                    <div className="text-sm font-medium opacity-80">
+                                        Найти все ТС с мощностью двигателя в диапазоне [min, max]
+                                    </div>
+                                    <div className="grid grid-cols-3 gap-3 items-end">
+                                        <Input
+                                            label="Engine min"
+                                            type="number"
+                                            value={presetEngMin}
+                                            onChange={(e) => setPresetEngMin(e.target.value)}
+                                        />
+                                        <Input
+                                            label="Engine max"
+                                            type="number"
+                                            value={presetEngMax}
+                                            onChange={(e) => setPresetEngMax(e.target.value)}
+                                        />
+                                        <Button onPress={presetListByEngineRange}>Выполнить</Button>
+                                    </div>
+                                </div>
+                            </ModalBody>
+
+                            <ModalFooter>
+                                <Button variant="light" onPress={close}>Закрыть</Button>
                             </ModalFooter>
                         </>
                     )}
