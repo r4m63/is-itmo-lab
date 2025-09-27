@@ -1,4 +1,4 @@
---  Usage: psql "postgresql://user:pass@host:port/db_name" -v seed_count=XXX -f seed_vehicle.sql
+--  Usage: psql "postgresql://user:pass@host:port/db_name" -v seed_count=XXX -f sql/seed_vehicle.sql
 
 \if :{?seed_count}
 \else
