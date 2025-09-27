@@ -44,6 +44,8 @@ export default function MainPage() {
     const [fuelType, setFuelType] = useState("");
 
     const {isOpen, onOpen, onOpenChange} = useDisclosure();
+
+    const [tableControls, setTableControls] = useState(null);
     const [refreshGrid, setRefreshGrid] = useState(() => () => {
     });
 
@@ -125,7 +127,7 @@ export default function MainPage() {
             });
 
             if (res.ok) {
-                refreshGrid();      // обновляем таблицу (серверная пагинация/фильтры остаются)
+                refreshGrid();      // обновить текущие блоки
                 onOpenChange(false);
                 toast.success("Сохранено");
             } else {
@@ -187,22 +189,15 @@ export default function MainPage() {
         }
     };
 
-    // PRESETS хэндлеры
-
-    const [tableControls, setTableControls] = useState(null);
-
-    const {
-        isOpen: isPresetOpen,
-        onOpen: onPresetOpen,
-        onOpenChange: onPresetOpenChange
-    } = useDisclosure();
+    // ---------- PRESETS ----------
+    const {isOpen: isPresetOpen, onOpen: onPresetOpen, onOpenChange: onPresetOpenChange} = useDisclosure();
 
     const [presetFuelGt, setPresetFuelGt] = useState("");
     const [presetType, setPresetType] = useState("");
     const [presetEngMin, setPresetEngMin] = useState("");
     const [presetEngMax, setPresetEngMax] = useState("");
 
-    // 1) Один с минимальным distanceTravelled — открываем форму редактирования с этим объектом
+    // 1) Один с минимальным distanceTravelled — получаем объект и открываем форму редактирования
     const presetMinDistance = async () => {
         try {
             const res = await fetch(`${API_BASE}/api/vehicle/special/min-distance`, {
@@ -215,7 +210,7 @@ export default function MainPage() {
             }
             if (!res.ok) throw new Error(`${res.status}`);
             const dto = await res.json();
-            onPresetOpenChange(false);     // закрыть окно пресетов
+            onPresetOpenChange(false);
             await openEditVehicleModal(dto);
             toast.success("Загружен объект с минимальным пробегом");
         } catch (e) {
@@ -224,7 +219,7 @@ export default function MainPage() {
         }
     };
 
-    // 2) Количество с расходом топлива > X — просто показать число
+    // 2) Количество fuel > X — показать число + применить фильтр к таблице
     const presetCountFuelGt = async () => {
         const v = Number(presetFuelGt);
         if (isNaN(v) || v <= 0) return toast.warning("Введите корректное значение топлива > 0");
@@ -234,33 +229,37 @@ export default function MainPage() {
                 headers: {"Accept": "application/json"},
             });
             if (!res.ok) throw new Error(`${res.status}`);
-            const data = await res.json(); // {count: number}
+            const data = await res.json(); // {count}
             toast.info(`Найдено: ${data.count}`);
+            // применим фильтр в гриде
+            // tableControls?.applyFilterFuelGt(v);
         } catch (e) {
             console.error(e);
             toast.error("Не удалось выполнить подсчет");
         }
     };
 
-    // 3) Список с расходом топлива > X — просто запросим и покажем сколько пришло; таблицу не перетираем
+    // 3) Список fuel > X — применяем фильтр в таблицу
     const presetListFuelGt = async () => {
         const v = Number(presetFuelGt);
-        if (isNaN(v) || v <= 0) return toast.warning("Введите корректное значение топлива > 0");
+        if (!Number.isFinite(v) || v <= 0) return toast.warning("Введите корректное значение топлива > 0");
         try {
             const res = await fetch(`${API_BASE}/api/vehicle/special/list-fuel-gt?v=${encodeURIComponent(v)}`, {
                 credentials: "include",
                 headers: {"Accept": "application/json"},
             });
             if (!res.ok) throw new Error(`${res.status}`);
-            const list = await res.json();
-            toast.success(`Получено объектов: ${Array.isArray(list) ? list.length : 0}`);
+            // можно посмотреть размер ответа, но главное — применить фильтр:
+            tableControls?.applyFilterFuelGt(v);   // <— ВАЖНО
+            onPresetOpenChange(false);
+            toast.success("Фильтр применён");
         } catch (e) {
             console.error(e);
             toast.error("Не удалось получить список");
         }
     };
 
-    // 4) Список по типу
+// 4) По типу
     const presetListByType = async () => {
         if (!presetType) return toast.warning("Выберите тип");
         try {
@@ -269,20 +268,21 @@ export default function MainPage() {
                 headers: {"Accept": "application/json"},
             });
             if (!res.ok) throw new Error(`${res.status}`);
-            const list = await res.json();
-            toast.success(`По типу ${presetType}: ${Array.isArray(list) ? list.length : 0}`);
+            tableControls?.applyFilterByType(presetType); // <— ВАЖНО
+            onPresetOpenChange(false);
+            toast.success("Фильтр применён");
         } catch (e) {
             console.error(e);
             toast.error("Не удалось получить по типу");
         }
     };
 
-    // 5) Диапазон мощности
+// 5) Диапазон мощности
     const presetListByEngineRange = async () => {
         const min = Number(presetEngMin);
         const max = Number(presetEngMax);
-        if (isNaN(min) || isNaN(max) || min < 0 || max < 0 || min > max) {
-            return toast.warning("Введите корректный диапазон мощности (min ≤ max, ≥ 0)");
+        if (!Number.isFinite(min) || !Number.isFinite(max) || min > max) {
+            return toast.warning("Введите корректный диапазон мощности (min ≤ max)");
         }
         try {
             const res = await fetch(`${API_BASE}/api/vehicle/special/by-engine-range?min=${min}&max=${max}`, {
@@ -290,12 +290,18 @@ export default function MainPage() {
                 headers: {"Accept": "application/json"},
             });
             if (!res.ok) throw new Error(`${res.status}`);
-            const list = await res.json();
-            toast.success(`В диапазоне ${min}–${max}: ${Array.isArray(list) ? list.length : 0}`);
+            tableControls?.applyFilterEnginePowerRange(min, max); // <— ВАЖНО
+            onPresetOpenChange(false);
+            toast.success("Фильтр применён");
         } catch (e) {
             console.error(e);
             toast.error("Не удалось получить по диапазону");
         }
+    };
+
+
+    const handleResetFilters = () => {
+        tableControls?.clearFilters();
     };
 
     return (
@@ -308,9 +314,11 @@ export default function MainPage() {
                             <Button color="primary" className={styles.control} onPress={openNewVehicleModal}>
                                 Добавить
                             </Button>
-
                             <Button color="primary" className={styles.control} onPress={onPresetOpen}>
                                 Пресеты
+                            </Button>
+                            <Button color="warning" className={styles.control} onPress={handleResetFilters}>
+                                Сбросить фильтры
                             </Button>
                         </div>
                     </div>
@@ -366,8 +374,8 @@ export default function MainPage() {
 
                                 <div className="grid grid-cols-2 gap-3">
                                     <Input type="number" label="Мощность двигателя" variant="bordered"
-                                           value={enginePower}
-                                           onChange={(e) => setEnginePower(e.target.value)} min={0}/>
+                                           value={enginePower} onChange={(e) => setEnginePower(e.target.value)}
+                                           min={0}/>
                                     <Input type="number" label="Кол-во колёс" variant="bordered" value={numberOfWheels}
                                            onChange={(e) => setNumberOfWheels(e.target.value)} isRequired min={1}/>
                                 </div>
@@ -381,8 +389,8 @@ export default function MainPage() {
 
                                 <div className="grid grid-cols-2 gap-3">
                                     <Input type="number" label="Расход топлива" variant="bordered"
-                                           value={fuelConsumption}
-                                           onChange={(e) => setFuelConsumption(e.target.value)} isRequired/>
+                                           value={fuelConsumption} onChange={(e) => setFuelConsumption(e.target.value)}
+                                           isRequired/>
                                     <Select label="Тип топлива" variant="bordered"
                                             selectedKeys={fuelType ? [fuelType] : []}
                                             onChange={(e) => setFuelType(e.target.value)} isRequired>
@@ -414,88 +422,62 @@ export default function MainPage() {
                 <ModalContent>
                     {(close) => (
                         <>
-                            <ModalHeader>Спец-операции (пресеты)</ModalHeader>
+                            <ModalHeader>Пресеты</ModalHeader>
                             <ModalBody className="flex flex-col gap-5">
-                                {/* 1) Один с минимальным distanceTravelled */}
                                 <div className="space-y-2">
-                                    <div className="text-sm font-medium opacity-80">
-                                        Вернуть один объект с минимальным distanceTravelled
+                                    <div className="text-sm font-medium opacity-80">Вернуть один объект с минимальным
+                                        distanceTravelled
                                     </div>
                                     <div className="flex items-center gap-3">
                                         <Button onPress={presetMinDistance}>Выполнить</Button>
                                     </div>
                                 </div>
 
-                                {/* 2) Кол-во fuel > X */}
                                 <div className="space-y-2">
-                                    <div className="text-sm font-medium opacity-80">
-                                        Вернуть количество объектов, у которых fuelConsumption &gt; X
+                                    <div className="text-sm font-medium opacity-80">Вернуть количество объектов, у
+                                        которых fuelConsumption &gt; X
                                     </div>
                                     <div className="flex items-center gap-3">
-                                        <Input
-                                            label="X (fuelConsumption)"
-                                            type="number"
-                                            value={presetFuelGt}
-                                            onChange={(e) => setPresetFuelGt(e.target.value)}
-                                        />
+                                        <Input label="X (fuelConsumption)" type="number" value={presetFuelGt}
+                                               onChange={(e) => setPresetFuelGt(e.target.value)}/>
                                         <Button onPress={presetCountFuelGt}>Выполнить</Button>
                                     </div>
                                 </div>
 
-                                {/* 3) Массив объектов fuel > X */}
                                 <div className="space-y-2">
-                                    <div className="text-sm font-medium opacity-80">
-                                        Вернуть массив объектов, у которых fuelConsumption &gt; X
+                                    <div className="text-sm font-medium opacity-80">Вернуть массив объектов, у которых
+                                        fuelConsumption &gt; X
                                     </div>
                                     <div className="flex items-center gap-3">
-                                        <Input
-                                            label="X (fuelConsumption)"
-                                            type="number"
-                                            value={presetFuelGt}
-                                            onChange={(e) => setPresetFuelGt(e.target.value)}
-                                        />
+                                        <Input label="X (fuelConsumption)" type="number" value={presetFuelGt}
+                                               onChange={(e) => setPresetFuelGt(e.target.value)}/>
                                         <Button onPress={presetListFuelGt}>Выполнить</Button>
                                     </div>
                                 </div>
 
-                                {/* 4) Найти по типу */}
                                 <div className="space-y-2">
-                                    <div className="text-sm font-medium opacity-80">
-                                        Найти все транспортные средства заданного типа
+                                    <div className="text-sm font-medium opacity-80">Найти все транспортные средства
+                                        заданного типа
                                     </div>
                                     <div className="flex items-center gap-3">
-                                        <Select
-                                            label="Тип ТС"
-                                            selectedKeys={presetType ? [presetType] : []}
-                                            onChange={(e) => setPresetType(e.target.value)}
-                                            className="min-w-[180px]"
-                                        >
-                                            {VEHICLE_TYPES.map(t => (
-                                                <SelectItem key={t} value={t}>{t}</SelectItem>
-                                            ))}
+                                        <Select label="Тип ТС" selectedKeys={presetType ? [presetType] : []}
+                                                onChange={(e) => setPresetType(e.target.value)}
+                                                className="min-w-[180px]">
+                                            {VEHICLE_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
                                         </Select>
                                         <Button onPress={presetListByType}>Выполнить</Button>
                                     </div>
                                 </div>
 
-                                {/* 5) Диапазон мощности */}
                                 <div className="space-y-2">
-                                    <div className="text-sm font-medium opacity-80">
-                                        Найти все ТС с мощностью двигателя в диапазоне [min, max]
+                                    <div className="text-sm font-medium opacity-80">Найти все ТС с мощностью двигателя в
+                                        диапазоне [min, max]
                                     </div>
                                     <div className="grid grid-cols-3 gap-3 items-end">
-                                        <Input
-                                            label="Engine min"
-                                            type="number"
-                                            value={presetEngMin}
-                                            onChange={(e) => setPresetEngMin(e.target.value)}
-                                        />
-                                        <Input
-                                            label="Engine max"
-                                            type="number"
-                                            value={presetEngMax}
-                                            onChange={(e) => setPresetEngMax(e.target.value)}
-                                        />
+                                        <Input label="Engine min" type="number" value={presetEngMin}
+                                               onChange={(e) => setPresetEngMin(e.target.value)}/>
+                                        <Input label="Engine max" type="number" value={presetEngMax}
+                                               onChange={(e) => setPresetEngMax(e.target.value)}/>
                                         <Button onPress={presetListByEngineRange}>Выполнить</Button>
                                     </div>
                                 </div>
