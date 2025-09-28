@@ -1,6 +1,6 @@
 package ru.itmo.isitmolab.service;
 
-import jakarta.ejb.Stateless;
+import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import ru.itmo.isitmolab.dao.VehicleSpecialDao;
 import ru.itmo.isitmolab.dto.VehicleDto;
@@ -8,7 +8,7 @@ import ru.itmo.isitmolab.dto.VehicleDto;
 import java.util.List;
 import java.util.Optional;
 
-@Stateless
+@ApplicationScoped
 public class VehicleSpecialService {
 
     @Inject

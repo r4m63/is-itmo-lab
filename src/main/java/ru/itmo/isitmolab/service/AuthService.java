@@ -1,6 +1,6 @@
 package ru.itmo.isitmolab.service;
 
-import jakarta.ejb.Stateless;
+import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -11,7 +11,7 @@ import ru.itmo.isitmolab.dto.CredsDto;
 
 import java.util.Map;
 
-@Stateless
+@ApplicationScoped
 public class AuthService {
 
     @Inject

@@ -1,10 +1,12 @@
 package ru.itmo.isitmolab.util.gridtable;
 
+import lombok.experimental.UtilityClass;
+
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
-
+@UtilityClass
 public final class DateParsers {
 
     private static final DateTimeFormatter DT_SPACE_SEC =
@@ -35,6 +37,6 @@ public final class DateParsers {
         } catch (Exception ignored) {
         }
 
-        return null; // важнее: не кидать исключение, просто игнорить нераспознанный формат
+        return null;
     }
 }

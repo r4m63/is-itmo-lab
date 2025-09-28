@@ -1,11 +1,11 @@
 package ru.itmo.isitmolab.service;
 
-import jakarta.ejb.Stateless;
+import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
-@Stateless
+@ApplicationScoped
 public class SessionService {
 
     public static final String ATTR_USER_ID = "userId";

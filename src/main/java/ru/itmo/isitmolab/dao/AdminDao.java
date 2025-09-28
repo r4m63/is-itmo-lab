@@ -1,6 +1,6 @@
 package ru.itmo.isitmolab.dao;
 
-import jakarta.ejb.Stateless;
+import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.NoResultException;
 import jakarta.persistence.PersistenceContext;
@@ -8,7 +8,7 @@ import ru.itmo.isitmolab.model.Admin;
 
 import java.util.Optional;
 
-@Stateless
+@ApplicationScoped
 public class AdminDao {
 
     @PersistenceContext(unitName = "studsPU")

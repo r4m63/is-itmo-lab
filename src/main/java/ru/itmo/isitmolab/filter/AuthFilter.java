@@ -26,17 +26,14 @@ public class AuthFilter implements ContainerRequestFilter {
         final String path = ctx.getUriInfo().getPath();
         final String method = ctx.getMethod();
 
-        // check auth/*
         if (path.equals("auth") || path.startsWith("/auth")) {
             return;
         }
 
-        // check OPTION preflight CORS
         if ("OPTIONS".equalsIgnoreCase(method)) {
             return;
         }
 
-        // check session
         HttpSession session = request.getSession(false);
         boolean ok = session != null && session.getAttribute(SessionService.ATTR_USER_ID) != null;
 
@@ -44,7 +41,6 @@ public class AuthFilter implements ContainerRequestFilter {
             return;
         }
 
-        // 401
         ctx.abortWith(
                 Response.status(Response.Status.UNAUTHORIZED)
                         .entity(Map.of("message", "Unauthorized"))

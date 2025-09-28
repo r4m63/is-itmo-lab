@@ -1,6 +1,6 @@
 package ru.itmo.isitmolab.service;
 
-import jakarta.ejb.Stateless;
+import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.ws.rs.WebApplicationException;
@@ -16,8 +16,7 @@ import ru.itmo.isitmolab.ws.VehicleWsHub;
 
 import java.util.List;
 
-
-@Stateless
+@ApplicationScoped
 public class VehicleService {
 
     @Inject
@@ -74,15 +73,13 @@ public class VehicleService {
     }
 
     public GridTableResponse<VehicleDto> queryTableGridFilters(GridTableRequest req) {
-        List<Vehicle> rows = vehicleDao.findPageByGrid(req); // страница сущностей
-        long total = vehicleDao.countByGrid(req); // общее количество строк под те же фильтры
+        List<Vehicle> rows = vehicleDao.findPageByGrid(req);
+        long total = vehicleDao.countByGrid(req);
         List<VehicleDto> dtos = rows.stream()
                 .map(VehicleDto::toDto)
                 .toList();
 
         return new GridTableResponse<>(dtos, (int) total);
     }
-
-
 
 }

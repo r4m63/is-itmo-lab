@@ -1,6 +1,7 @@
 package ru.itmo.isitmolab.util.gridtable;
 
 import jakarta.persistence.criteria.*;
+import lombok.experimental.UtilityClass;
 import ru.itmo.isitmolab.model.Vehicle;
 
 import java.math.BigDecimal;
@@ -13,7 +14,7 @@ import java.util.Map;
 
 import static ru.itmo.isitmolab.util.gridtable.DateParsers.parseToLocalDate;
 
-
+@UtilityClass
 public final class GridTablePredicateBuilder {
 
     public static Path<?> resolvePath(Root<Vehicle> root, String colId) {
@@ -48,7 +49,7 @@ public final class GridTablePredicateBuilder {
                 case "number" -> handleNumber(cb, out, path, fm);
                 case "date" -> handleDate(cb, out, path, fm);
                 case "set" -> handleSet(cb, out, path, fm);
-                default -> { /* ignore */ }
+                default -> { }
             }
         }
         return out;

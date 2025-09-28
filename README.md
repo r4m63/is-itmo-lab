@@ -44,13 +44,13 @@ public enum VehicleType {
     CAR,
     HELICOPTER,
     MOTORCYCLE,
-    CHOPPER;
+    CHOPPER
 }
 
 public enum FuelType {
     KEROSENE,
     MANPOWER,
-    NUCLEAR;
+    NUCLEAR
 }
 ```
 

@@ -13,5 +13,5 @@ import java.util.List;
 @Builder
 public class GridTableResponse<T> {
     public List<T> rows;
-    public Integer lastRow; // total count
+    public Integer lastRow;
 }

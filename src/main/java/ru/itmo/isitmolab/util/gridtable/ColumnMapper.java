@@ -1,9 +1,11 @@
 package ru.itmo.isitmolab.util.gridtable;
 
+import lombok.experimental.UtilityClass;
+
 import java.util.HashMap;
 import java.util.Map;
 
-
+@UtilityClass
 public final class ColumnMapper {
 
     private static final Map<String, String> COL_MAP = new HashMap<>();

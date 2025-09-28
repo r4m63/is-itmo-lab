@@ -25,7 +25,6 @@ public class AuthController {
 
     @Context
     HttpServletRequest request;
-
     @Context
     HttpServletResponse response;
 

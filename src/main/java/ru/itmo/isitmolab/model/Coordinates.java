@@ -14,12 +14,12 @@ import lombok.*;
 @Builder
 public class Coordinates {
 
-    @DecimalMax(value = "613", inclusive = true)
+    @DecimalMax(value = "613")
     @Column(name = "coordinates_x")
-    private Double x; // max 613
+    private Double x;
 
     @NotNull
-    @DecimalMax(value = "962", inclusive = true)
+    @DecimalMax(value = "962")
     @Column(name = "coordinates_y", nullable = false)
-    private Float y; // max 962, not null
+    private Float y;
 }

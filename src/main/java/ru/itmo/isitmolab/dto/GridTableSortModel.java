@@ -11,5 +11,5 @@ import lombok.NoArgsConstructor;
 @Builder
 public class GridTableSortModel {
     public String colId;
-    public String sort; // "asc" | "desc"
+    public String sort;
 }

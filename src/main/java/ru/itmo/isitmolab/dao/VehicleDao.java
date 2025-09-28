@@ -24,7 +24,6 @@ public class VehicleDao {
         if (v.getId() == null) {
             em.persist(v);
             em.flush();
-        } else {
             em.merge(v);
         }
     }
@@ -64,11 +63,6 @@ public class VehicleDao {
                 .getResultList();
     }
 
-    // ===================== AG Grid helpers moved here =====================
-
-    /**
-     * Возвращает страницу данных согласно GridRequest: фильтры, сортировки, пагинация.
-     */
     public List<Vehicle> findPageByGrid(GridTableRequest req) {
         final int pageSize = Math.max(1, req.endRow - req.startRow);
         final int first = Math.max(0, req.startRow);
@@ -78,13 +72,11 @@ public class VehicleDao {
         CriteriaQuery<Vehicle> cq = cb.createQuery(Vehicle.class);
         Root<Vehicle> root = cq.from(Vehicle.class);
 
-        // WHERE
         List<Predicate> predicates = GridTablePredicateBuilder.build(cb, root, req.filterModel);
         if (!predicates.isEmpty()) {
             cq.where(predicates.toArray(new Predicate[0]));
         }
 
-        // ORDER BY
         if (req.sortModel != null && !req.sortModel.isEmpty()) {
             List<Order> orders = new ArrayList<>();
             req.sortModel.forEach(s -> {
@@ -102,9 +94,6 @@ public class VehicleDao {
                 .getResultList();
     }
 
-    /**
-     * Возвращает общее число строк под те же фильтры (для lastRow).
-     */
     public long countByGrid(GridTableRequest req) {
         CriteriaBuilder cb = em.getCriteriaBuilder();
 

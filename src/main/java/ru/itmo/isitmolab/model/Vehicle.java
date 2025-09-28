@@ -43,22 +43,22 @@ public class Vehicle {
 
     @Positive
     @Column(name = "engine_power")
-    private Integer enginePower; // nullable, >0
+    private Integer enginePower;
 
     @Positive
     @Column(name = "number_of_wheels", nullable = false)
-    private int numberOfWheels; // >0
+    private int numberOfWheels;
 
     @Positive
-    private Integer capacity; // nullable, >0
+    private Integer capacity;
 
     @Positive
     @Column(name = "distance_travelled")
-    private Integer distanceTravelled; // nullable, >0
+    private Integer distanceTravelled;
 
     @Positive
     @Column(name = "fuel_consumption", nullable = false)
-    private float fuelConsumption; // >0
+    private float fuelConsumption;
 
     @NotNull
     @Enumerated(EnumType.STRING)
