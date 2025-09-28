@@ -15,6 +15,7 @@ import ru.itmo.isitmolab.dto.GridResponse;
 import ru.itmo.isitmolab.dto.VehicleDto;
 import ru.itmo.isitmolab.model.Admin;
 import ru.itmo.isitmolab.model.Vehicle;
+import ru.itmo.isitmolab.ws.VehicleWsHub;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -30,6 +31,8 @@ public class VehicleService {
     AdminDao adminDao;
     @Inject
     SessionService sessionService;
+    @Inject
+    VehicleWsHub wsHub;
 
     @PersistenceContext(unitName = "studsPU")
     private EntityManager em;
@@ -45,6 +48,7 @@ public class VehicleService {
         Vehicle v = VehicleDto.toEntity(dto, null);
         v.setCreatedBy(admin);
         dao.save(v);
+        wsHub.broadcastText("refresh");
         return v.getId();
     }
 
@@ -54,6 +58,7 @@ public class VehicleService {
                         "Vehicle not found: " + id, Response.Status.NOT_FOUND));
         VehicleDto.toEntity(dto, current);
         dao.save(current);
+        wsHub.broadcastText("refresh");
     }
 
     public VehicleDto getVehicleById(Long id) {
@@ -69,6 +74,7 @@ public class VehicleService {
                     "Vehicle not found: " + id, Response.Status.NOT_FOUND);
         }
         dao.deleteById(id);
+        wsHub.broadcastText("refresh");
     }
 
     public List<VehicleDto> getAllVehicles() {
@@ -132,6 +138,7 @@ public class VehicleService {
 
     // фронт => реальные поля сущности
     private static final Map<String, String> COL_MAP = new HashMap<>();
+
     static {
         COL_MAP.put("creationDate", "creationDateTime");
         COL_MAP.put("coordinates.x", "coordinates.x");
@@ -182,7 +189,8 @@ public class VehicleService {
                         case "startsWith" -> out.add(cb.like(exp, p + "%"));
                         case "endsWith" -> out.add(cb.like(exp, "%" + p));
                         case "notEqual" -> out.add(cb.notEqual(exp, p));
-                        default -> {}
+                        default -> {
+                        }
                     }
                 }
                 case "number" -> {
@@ -249,7 +257,8 @@ public class VehicleService {
                             LocalDateTime end = d2.plusDays(1).atStartOfDay();
                             out.add(cb.between(dt, start, end));
                         }
-                        default -> {}
+                        default -> {
+                        }
                     }
                 }
                 case "set" -> {
@@ -263,13 +272,16 @@ public class VehicleService {
                     }
                     out.add(in);
                 }
-                default -> {}
+                default -> {
+                }
             }
         }
         return out;
     }
 
-    /** Универсальная сборка предикатов для числового поля конкретного типа. */
+    /**
+     * Универсальная сборка предикатов для числового поля конкретного типа.
+     */
     private static <T extends Number & Comparable<T>> void addNumberPredicates(
             CriteriaBuilder cb,
             List<Predicate> out,
@@ -281,11 +293,11 @@ public class VehicleService {
         if (v1 == null && !"inRange".equals(type)) return;
 
         switch (type) {
-            case "equals"             -> out.add(cb.equal(num, v1));
-            case "notEqual"           -> out.add(cb.notEqual(num, v1));
-            case "lessThan"           -> out.add(cb.lessThan(num, v1));
-            case "lessThanOrEqual"    -> out.add(cb.lessThanOrEqualTo(num, v1));
-            case "greaterThan"        -> out.add(cb.greaterThan(num, v1));
+            case "equals" -> out.add(cb.equal(num, v1));
+            case "notEqual" -> out.add(cb.notEqual(num, v1));
+            case "lessThan" -> out.add(cb.lessThan(num, v1));
+            case "lessThanOrEqual" -> out.add(cb.lessThanOrEqualTo(num, v1));
+            case "greaterThan" -> out.add(cb.greaterThan(num, v1));
             case "greaterThanOrEqual" -> out.add(cb.greaterThanOrEqualTo(num, v1));
             case "inRange" -> {
                 if (v1 != null && v2 != null) {
@@ -296,7 +308,8 @@ public class VehicleService {
                     out.add(cb.lessThanOrEqualTo(num, v2));
                 }
             }
-            default -> {}
+            default -> {
+            }
         }
     }
 
