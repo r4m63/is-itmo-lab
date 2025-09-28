@@ -2,13 +2,7 @@
 
 import React, {useCallback, useMemo, useRef} from "react";
 import {AgGridReact} from "ag-grid-react";
-import {
-    AllCommunityModule,
-    colorSchemeDark,
-    iconSetMaterial,
-    ModuleRegistry,
-    themeQuartz
-} from "ag-grid-community";
+import {AllCommunityModule, colorSchemeDark, iconSetMaterial, ModuleRegistry, themeQuartz} from "ag-grid-community";
 import {API_BASE} from "../../cfg.js";
 
 ModuleRegistry.registerModules([AllCommunityModule]);
@@ -85,12 +79,12 @@ export default function VehicleTable({onOpenEditVehicleModal, onReadyRefresh, on
         },
         {
             headerName: "Creation Date",
-            field: "creationDate", // DTO поле; на бэке маппится на creationDateTime
+            field: "creationDate",
             width: 190,
             sortable: true,
             filter: "agDateColumnFilter",
             floatingFilter: true,
-            valueFormatter: (p) => (p.value ? new Date(p.value).toLocaleString() : ""),
+            valueFormatter: (p) => p.value ? new Date(p.value).toLocaleString() : "",
         },
         {
             headerName: "Coordinates",
