@@ -22,6 +22,9 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
 
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
+
 @Stateless
 public class VehicleService {
 
@@ -36,6 +39,32 @@ public class VehicleService {
 
     @PersistenceContext(unitName = "studsPU")
     private EntityManager em;
+
+    private static final DateTimeFormatter DT_SPACE_SEC = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+    private static final DateTimeFormatter DT_SPACE_MILLIS = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS");
+
+    private static LocalDate parseToLocalDate(String s) {
+        if (s == null || s.isBlank()) return null;
+
+        // 1) чистая дата
+        try { return LocalDate.parse(s); } catch (DateTimeParseException ignored) {}
+
+        // 2) ISO datetime "yyyy-MM-ddTHH:mm:ss[.SSS]"
+        try { return LocalDateTime.parse(s).toLocalDate(); } catch (DateTimeParseException ignored) {}
+
+        // 3) "yyyy-MM-dd HH:mm:ss.SSS"
+        try { return LocalDateTime.parse(s, DT_SPACE_MILLIS).toLocalDate(); } catch (DateTimeParseException ignored) {}
+
+        // 4) "yyyy-MM-dd HH:mm:ss"
+        try { return LocalDateTime.parse(s, DT_SPACE_SEC).toLocalDate(); } catch (DateTimeParseException ignored) {}
+
+        // если ничего не зашло — пробрасываем понятное исключение
+        throw new DateTimeParseException("Unsupported date format", s, 0);
+    }
+
+    private static LocalDate safeParseOrNull(String s) {
+        try { return parseToLocalDate(s); } catch (Exception e) { return null; }
+    }
 
     // ========= CRUD =========
 
@@ -238,7 +267,9 @@ public class VehicleService {
                     // фильтруем только если поле LocalDateTime
                     if (!LocalDateTime.class.isAssignableFrom(path.getJavaType())) break;
 
-                    LocalDate d1 = LocalDate.parse(d1s);
+                    LocalDate d1 = safeParseOrNull(d1s);
+                    if (d1 == null) break;
+
                     LocalDateTime start = d1.atStartOfDay();
                     Expression<LocalDateTime> dt = path.as(LocalDateTime.class);
 
@@ -253,12 +284,12 @@ public class VehicleService {
                             out.add(cb.greaterThanOrEqualTo(dt, end));
                         }
                         case "inRange" -> {
-                            LocalDate d2 = (d2s != null && !d2s.isBlank()) ? LocalDate.parse(d2s) : d1;
+                            LocalDate d2 = safeParseOrNull(d2s);
+                            if (d2 == null) d2 = d1;
                             LocalDateTime end = d2.plusDays(1).atStartOfDay();
                             out.add(cb.between(dt, start, end));
                         }
-                        default -> {
-                        }
+                        default -> { /* ignore */ }
                     }
                 }
                 case "set" -> {

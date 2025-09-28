@@ -14,6 +14,8 @@ import ru.itmo.isitmolab.model.Vehicle;
 import ru.itmo.isitmolab.model.VehicleType;
 
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
+import java.time.format.DateTimeFormatter;
 
 @Data
 @NoArgsConstructor
@@ -53,9 +55,21 @@ public class VehicleDto {
     @NotNull(message = "Выберите fuelType.")
     private FuelType fuelType;
 
+    private String creationDate;
+
+    private static final DateTimeFormatter ISO_MILLIS =
+            DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS");
 
     public static VehicleDto fromEntity(Vehicle v) {
         if (v == null) return null;
+
+        String createdIso = null;
+        if (v.getCreationDateTime() != null) {
+            createdIso = v.getCreationDateTime()
+                    .truncatedTo(ChronoUnit.MILLIS)
+                    .format(ISO_MILLIS);
+        }
+        
         return VehicleDto.builder()
                 .id(v.getId())
                 .name(v.getName())
@@ -70,6 +84,7 @@ public class VehicleDto {
                 .distanceTravelled(v.getDistanceTravelled())
                 .fuelConsumption(v.getFuelConsumption())
                 .fuelType(v.getFuelType())
+                .creationDate(createdIso)
                 .build();
     }
 
