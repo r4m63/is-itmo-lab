@@ -20,10 +20,9 @@ import ru.itmo.isitmolab.ws.VehicleWsHub;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.*;
-
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.util.*;
 
 @Stateless
 public class VehicleService {
@@ -47,23 +46,39 @@ public class VehicleService {
         if (s == null || s.isBlank()) return null;
 
         // 1) чистая дата
-        try { return LocalDate.parse(s); } catch (DateTimeParseException ignored) {}
+        try {
+            return LocalDate.parse(s);
+        } catch (DateTimeParseException ignored) {
+        }
 
         // 2) ISO datetime "yyyy-MM-ddTHH:mm:ss[.SSS]"
-        try { return LocalDateTime.parse(s).toLocalDate(); } catch (DateTimeParseException ignored) {}
+        try {
+            return LocalDateTime.parse(s).toLocalDate();
+        } catch (DateTimeParseException ignored) {
+        }
 
         // 3) "yyyy-MM-dd HH:mm:ss.SSS"
-        try { return LocalDateTime.parse(s, DT_SPACE_MILLIS).toLocalDate(); } catch (DateTimeParseException ignored) {}
+        try {
+            return LocalDateTime.parse(s, DT_SPACE_MILLIS).toLocalDate();
+        } catch (DateTimeParseException ignored) {
+        }
 
         // 4) "yyyy-MM-dd HH:mm:ss"
-        try { return LocalDateTime.parse(s, DT_SPACE_SEC).toLocalDate(); } catch (DateTimeParseException ignored) {}
+        try {
+            return LocalDateTime.parse(s, DT_SPACE_SEC).toLocalDate();
+        } catch (DateTimeParseException ignored) {
+        }
 
         // если ничего не зашло — пробрасываем понятное исключение
         throw new DateTimeParseException("Unsupported date format", s, 0);
     }
 
     private static LocalDate safeParseOrNull(String s) {
-        try { return parseToLocalDate(s); } catch (Exception e) { return null; }
+        try {
+            return parseToLocalDate(s);
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     // ========= CRUD =========

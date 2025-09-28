@@ -8,7 +8,6 @@ import jakarta.websocket.server.ServerEndpoint;
 public class VehicleWsEndpoint {
 
     private VehicleWsHub hub() {
-        // гарантированно получаем CDI-бин внутри WebSocket endpoint
         return CDI.current().select(VehicleWsHub.class).get();
     }
 
@@ -29,6 +28,6 @@ public class VehicleWsEndpoint {
 
     @OnMessage
     public void onMessage(String message, Session session) {
-        // можно поддержать ping/pong или no-op
+
     }
 }

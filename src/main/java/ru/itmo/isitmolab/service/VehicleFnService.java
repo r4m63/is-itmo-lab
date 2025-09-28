@@ -4,7 +4,6 @@ import jakarta.ejb.Stateless;
 import jakarta.inject.Inject;
 import ru.itmo.isitmolab.dao.VehicleFnDao;
 import ru.itmo.isitmolab.dto.VehicleDto;
-import ru.itmo.isitmolab.model.Vehicle;
 
 import java.util.List;
 import java.util.Optional;

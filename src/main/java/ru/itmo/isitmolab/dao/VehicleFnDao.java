@@ -14,7 +14,6 @@ public class VehicleFnDao {
     @PersistenceContext(unitName = "studsPU")
     EntityManager em;
 
-    /** 1) Любой с минимальным distance_travelled */
     public Optional<Vehicle> findAnyWithMinDistance() {
         List<Vehicle> list = em.createNativeQuery(
                         "select * from fn_vehicle_min_distance()", Vehicle.class)
@@ -22,7 +21,6 @@ public class VehicleFnDao {
         return list.isEmpty() ? Optional.empty() : Optional.of(list.get(0));
     }
 
-    /** 2) Кол-во с fuel_consumption > v */
     public long countFuelConsumptionGreaterThan(float v) {
         Number n = (Number) em.createNativeQuery(
                         "select fn_vehicle_count_fuel_gt(?1)")
@@ -31,7 +29,6 @@ public class VehicleFnDao {
         return n.longValue();
     }
 
-    /** 3) Список с fuel_consumption > v */
     public List<Vehicle> listFuelConsumptionGreaterThan(float v) {
         return em.createNativeQuery(
                         "select * from fn_vehicle_list_fuel_gt(?1)", Vehicle.class)
@@ -39,7 +36,6 @@ public class VehicleFnDao {
                 .getResultList();
     }
 
-    /** 4) Список по типу */
     public List<Vehicle> listByType(String type) {
         return em.createNativeQuery(
                         "select * from fn_vehicle_list_by_type(?1)", Vehicle.class)
@@ -47,7 +43,6 @@ public class VehicleFnDao {
                 .getResultList();
     }
 
-    /** 5) Список по диапазону мощности (включительно) */
     public List<Vehicle> listByEnginePowerBetween(Integer min, Integer max) {
         return em.createNativeQuery(
                         "select * from fn_vehicle_list_engine_between(?1, ?2)", Vehicle.class)

@@ -40,5 +40,4 @@ public class SessionService {
         res.addCookie(c);
     }
 
-
 }

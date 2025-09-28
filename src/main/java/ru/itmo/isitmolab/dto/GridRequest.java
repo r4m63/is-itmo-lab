@@ -17,7 +17,7 @@ public class GridRequest {
     @NotNull
     public Integer startRow;
     @NotNull
-    public Integer endRow; // exclusive
-    public List<SortModel> sortModel;          // [{colId:"name", sort:"asc"}]
-    public Map<String, Object> filterModel;    // raw ag-Grid filter model
+    public Integer endRow;                      // exclusive
+    public List<SortModel> sortModel;           // [{colId:"name", sort:"asc"}]
+    public Map<String, Object> filterModel;     // raw ag-Grid filter model
 }

@@ -14,8 +14,8 @@ import ru.itmo.isitmolab.model.Vehicle;
 import ru.itmo.isitmolab.model.VehicleType;
 
 import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 
 @Data
 @NoArgsConstructor
@@ -69,7 +69,7 @@ public class VehicleDto {
                     .truncatedTo(ChronoUnit.MILLIS)
                     .format(ISO_MILLIS);
         }
-        
+
         return VehicleDto.builder()
                 .id(v.getId())
                 .name(v.getName())
@@ -109,7 +109,6 @@ public class VehicleDto {
         target.setFuelConsumption(d.getFuelConsumption());
         target.setFuelType(d.getFuelType());
 
-        // подстраховка на случай отсутствия даты при апдейте
         if (target.getCreationDateTime() == null) {
             target.setCreationDateTime(LocalDateTime.now());
         }
