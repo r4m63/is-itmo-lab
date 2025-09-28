@@ -23,12 +23,6 @@ export const tableTheme = themeQuartz
         selectedRowBackgroundColor: "#1e3a8a",
     });
 
-/**
- * props:
- * - onOpenEditVehicleModal(dto)
- * - onReadyRefresh(fn)            -> родителю отдаём () => refreshInfiniteCache()
- * - onReadyControls(controls)     -> applyFilter... / clearFilters / refresh
- */
 export default function VehicleTable({onOpenEditVehicleModal, onReadyRefresh, onReadyControls}) {
     const gridApiRef = useRef(null);
 
@@ -154,14 +148,13 @@ export default function VehicleTable({onOpenEditVehicleModal, onReadyRefresh, on
     const mapSortModel = (sm = []) => sm.map(s => ({colId: s.colId, sort: s.sort}));
 
     const makeDatasource = useCallback(() => ({
-        // В AG Grid v34 для Infinite Row Model тут приходят startRow/endRow на params верхнего уровня
         getRows: async (params) => {
             try {
                 const body = {
                     startRow: params.startRow,
-                    endRow: params.endRow,                 // exclusive
+                    endRow: params.endRow,
                     sortModel: mapSortModel(params.sortModel),
-                    filterModel: params.filterModel || {}, // raw ag-Grid filter model
+                    filterModel: params.filterModel || {},
                 };
 
                 const res = await fetch(`${API_BASE}/api/vehicle/query`, {
@@ -191,7 +184,6 @@ export default function VehicleTable({onOpenEditVehicleModal, onReadyRefresh, on
         gridApiRef.current.purgeInfiniteCache(); // первая загрузка
     }, [makeDatasource]);
 
-    // Отдаём наружу методы
     const exposeRefresh = useCallback(() => {
         onReadyRefresh?.(() => {
             if (!gridApiRef.current) return;
@@ -205,16 +197,14 @@ export default function VehicleTable({onOpenEditVehicleModal, onReadyRefresh, on
         if (!api) return;
 
         onReadyControls({
-            // для CRUD – мягкое обновление текущих блоков
             refresh: () => {
                 api.refreshInfiniteCache();
             },
 
-            // Полная очистка (используем для пресетов)
             clearFilters: () => {
                 api.setFilterModel(null);
                 api.onFilterChanged();
-                api.purgeInfiniteCache();         // ВАЖНО: именно purge, не refresh
+                api.purgeInfiniteCache();
                 api.ensureIndexVisible(0);
             },
 
@@ -225,17 +215,16 @@ export default function VehicleTable({onOpenEditVehicleModal, onReadyRefresh, on
 
                 api.setFilterModel({
                     fuelConsumption: {
-                        filterType: "number",         // сервер это читает
+                        filterType: "number",
                         type: "greaterThan",
-                        filter: x,                    // число, не строка
+                        filter: x,
                     },
                 });
                 api.onFilterChanged();
-                api.purgeInfiniteCache();         // ВАЖНО
+                api.purgeInfiniteCache();
                 api.ensureIndexVisible(0);
             },
 
-            // type = VALUE
             applyFilterByType: (type) => {
                 if (!type) return;
                 api.setFilterModel({
@@ -250,7 +239,6 @@ export default function VehicleTable({onOpenEditVehicleModal, onReadyRefresh, on
                 api.ensureIndexVisible(0);
             },
 
-            // enginePower inRange [min, max]
             applyFilterEnginePowerRange: (rawMin, rawMax) => {
                 const min = Number.parseFloat(rawMin);
                 const max = Number.parseFloat(rawMax);
@@ -278,15 +266,12 @@ export default function VehicleTable({onOpenEditVehicleModal, onReadyRefresh, on
         exposeControls();
     }, [setDatasource, exposeRefresh, exposeControls]);
 
-    // при ручном фильтре/сортировке обновляем кэш
     const onFilterChanged = useCallback(() => {
-        // пользователь руками поменял фильтры — грузим заново
         gridApiRef.current?.purgeInfiniteCache();
         gridApiRef.current?.ensureIndexVisible(0);
     }, []);
 
     const onSortChanged = useCallback(() => {
-        // пользователь руками поменял сортировку — грузим заново
         gridApiRef.current?.purgeInfiniteCache();
         gridApiRef.current?.ensureIndexVisible(0);
     }, []);

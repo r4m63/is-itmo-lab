@@ -14,7 +14,6 @@ export default function App() {
     const PrivateRoute = ({children}) => {
         if (isAuthed === null) return null;
         return isAuthed ? children : <Navigate to="/login" replace/>;
-        // toast.error('Сессия не найдена.');
     };
 
     const PublicRoute = ({children}) => {
@@ -38,7 +37,6 @@ export default function App() {
                 switch (res.status) {
                     case 401:
                         setIsAuthed(false);
-                        // toast.error('Сессия не найдена.');
                         break;
                     default:
                         setIsAuthed(false);

@@ -56,14 +56,12 @@ export default function MainPage() {
         try {
             const u = new URL(API_BASE);
             const wsProto = u.protocol === "https:" ? "wss:" : "ws:";
-            return `${wsProto}//${u.host}${u.pathname.replace(/\/+$/,'')}/ws/vehicles`;
-            // пример: API_BASE=https://site/app  => wss://site/app/ws/vehicles
+            return `${wsProto}//${u.host}${u.pathname.replace(/\/+$/, '')}/ws/vehicles`;
         } catch {
-            // fallback: если API_BASE строкой типа "/app"
             const loc = window.location;
             const wsProto = loc.protocol === "https:" ? "wss:" : "ws:";
             const base = API_BASE?.startsWith("/") ? API_BASE : `/${API_BASE || ""}`;
-            return `${wsProto}//${loc.host}${base.replace(/\/+$/,'')}/ws/vehicles`;
+            return `${wsProto}//${loc.host}${base.replace(/\/+$/, '')}/ws/vehicles`;
         }
     }, []);
 
@@ -71,22 +69,20 @@ export default function MainPage() {
         if (wsRef.current?.readyState === WebSocket.OPEN ||
             wsRef.current?.readyState === WebSocket.CONNECTING) return;
 
-        let retry = 1000; // 1s старт
+        let retry = 1000;
         const openSocket = () => {
             const ws = new WebSocket(WS_URL);
             wsRef.current = ws;
 
             ws.onopen = () => {
-                retry = 1000; // сбросить бэк-офф
+                retry = 1000;
             };
 
             ws.onmessage = (evt) => {
                 const msg = (evt.data || "").toString().trim();
                 if (msg === "refresh") {
-                    // м/б задебаунсить, чтобы при массовых изменениях не спамить сервер
                     refreshGrid?.();
                 }
-                // на будущее можно поддержать JSON с action/id
             };
 
             ws.onclose = () => {
@@ -97,7 +93,10 @@ export default function MainPage() {
             };
 
             ws.onerror = () => {
-                try { ws.close(); } catch {}
+                try {
+                    ws.close();
+                } catch {
+                }
             };
         };
 
@@ -108,7 +107,10 @@ export default function MainPage() {
         connectWs();
         return () => {
             clearTimeout(reconnectTimerRef.current);
-            try { wsRef.current?.close(); } catch {}
+            try {
+                wsRef.current?.close();
+            } catch {
+            }
         };
     }, [connectWs]);
 
@@ -191,7 +193,7 @@ export default function MainPage() {
             });
 
             if (res.ok) {
-                refreshGrid();      // обновить текущие блоки
+                refreshGrid();
                 onOpenChange(false);
                 toast.success("Сохранено");
             } else {
@@ -253,7 +255,6 @@ export default function MainPage() {
         }
     };
 
-    // ---------- PRESETS ----------
     const {isOpen: isPresetOpen, onOpen: onPresetOpen, onOpenChange: onPresetOpenChange} = useDisclosure();
 
     const [presetFuelGt, setPresetFuelGt] = useState("");
@@ -293,10 +294,8 @@ export default function MainPage() {
                 headers: {"Accept": "application/json"},
             });
             if (!res.ok) throw new Error(`${res.status}`);
-            const data = await res.json(); // {count}
+            const data = await res.json();
             toast.info(`Найдено: ${data.count}`);
-            // применим фильтр в гриде
-            // tableControls?.applyFilterFuelGt(v);
         } catch (e) {
             console.error(e);
             toast.error("Не удалось выполнить подсчет");
@@ -313,8 +312,7 @@ export default function MainPage() {
                 headers: {"Accept": "application/json"},
             });
             if (!res.ok) throw new Error(`${res.status}`);
-            // можно посмотреть размер ответа, но главное — применить фильтр:
-            tableControls?.applyFilterFuelGt(v);   // <— ВАЖНО
+            tableControls?.applyFilterFuelGt(v);
             onPresetOpenChange(false);
             toast.success("Фильтр применён");
         } catch (e) {
@@ -332,7 +330,7 @@ export default function MainPage() {
                 headers: {"Accept": "application/json"},
             });
             if (!res.ok) throw new Error(`${res.status}`);
-            tableControls?.applyFilterByType(presetType); // <— ВАЖНО
+            tableControls?.applyFilterByType(presetType);
             onPresetOpenChange(false);
             toast.success("Фильтр применён");
         } catch (e) {
@@ -354,7 +352,7 @@ export default function MainPage() {
                 headers: {"Accept": "application/json"},
             });
             if (!res.ok) throw new Error(`${res.status}`);
-            tableControls?.applyFilterEnginePowerRange(min, max); // <— ВАЖНО
+            tableControls?.applyFilterEnginePowerRange(min, max);
             onPresetOpenChange(false);
             toast.success("Фильтр применён");
         } catch (e) {
@@ -362,7 +360,6 @@ export default function MainPage() {
             toast.error("Не удалось получить по диапазону");
         }
     };
-
 
     const handleResetFilters = () => {
         tableControls?.clearFilters();
