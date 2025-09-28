@@ -1,6 +1,6 @@
 'use client';
 
-import {useState} from "react";
+import {useCallback, useEffect, useMemo, useRef, useState} from "react";
 import {
     Button,
     Input,
@@ -48,6 +48,70 @@ export default function MainPage() {
     const [tableControls, setTableControls] = useState(null);
     const [refreshGrid, setRefreshGrid] = useState(() => () => {
     });
+
+    const wsRef = useRef(null);
+    const reconnectTimerRef = useRef(null);
+
+    const WS_URL = useMemo(() => {
+        try {
+            const u = new URL(API_BASE);
+            const wsProto = u.protocol === "https:" ? "wss:" : "ws:";
+            return `${wsProto}//${u.host}${u.pathname.replace(/\/+$/,'')}/ws/vehicles`;
+            // пример: API_BASE=https://site/app  => wss://site/app/ws/vehicles
+        } catch {
+            // fallback: если API_BASE строкой типа "/app"
+            const loc = window.location;
+            const wsProto = loc.protocol === "https:" ? "wss:" : "ws:";
+            const base = API_BASE?.startsWith("/") ? API_BASE : `/${API_BASE || ""}`;
+            return `${wsProto}//${loc.host}${base.replace(/\/+$/,'')}/ws/vehicles`;
+        }
+    }, []);
+
+    const connectWs = useCallback(() => {
+        if (wsRef.current?.readyState === WebSocket.OPEN ||
+            wsRef.current?.readyState === WebSocket.CONNECTING) return;
+
+        let retry = 1000; // 1s старт
+        const openSocket = () => {
+            const ws = new WebSocket(WS_URL);
+            wsRef.current = ws;
+
+            ws.onopen = () => {
+                retry = 1000; // сбросить бэк-офф
+            };
+
+            ws.onmessage = (evt) => {
+                const msg = (evt.data || "").toString().trim();
+                if (msg === "refresh") {
+                    // м/б задебаунсить, чтобы при массовых изменениях не спамить сервер
+                    refreshGrid?.();
+                }
+                // на будущее можно поддержать JSON с action/id
+            };
+
+            ws.onclose = () => {
+                reconnectTimerRef.current = setTimeout(() => {
+                    retry = Math.min(retry * 2, 10000); // до 10s
+                    openSocket();
+                }, retry);
+            };
+
+            ws.onerror = () => {
+                try { ws.close(); } catch {}
+            };
+        };
+
+        openSocket();
+    }, [WS_URL, refreshGrid]);
+
+    useEffect(() => {
+        connectWs();
+        return () => {
+            clearTimeout(reconnectTimerRef.current);
+            try { wsRef.current?.close(); } catch {}
+        };
+    }, [connectWs]);
+
 
     const openNewVehicleModal = () => {
         setActiveVehicle(null);
@@ -259,7 +323,7 @@ export default function MainPage() {
         }
     };
 
-// 4) По типу
+    // 4) По типу
     const presetListByType = async () => {
         if (!presetType) return toast.warning("Выберите тип");
         try {
@@ -277,12 +341,12 @@ export default function MainPage() {
         }
     };
 
-// 5) Диапазон мощности
+    // 5) Диапазон мощности
     const presetListByEngineRange = async () => {
         const min = Number(presetEngMin);
         const max = Number(presetEngMax);
-        if (!Number.isFinite(min) || !Number.isFinite(max) || min > max) {
-            return toast.warning("Введите корректный диапазон мощности (min ≤ max)");
+        if (!Number.isFinite(min) || !Number.isFinite(max) || min > max || !min || !max) {
+            return toast.warning("Введите корректный диапазон мощности");
         }
         try {
             const res = await fetch(`${API_BASE}/api/vehicle/special/by-engine-range?min=${min}&max=${max}`, {
