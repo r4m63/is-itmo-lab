@@ -35,7 +35,7 @@ public class CorsFilter implements ContainerRequestFilter, ContainerResponseFilt
             if (reqHeaders == null || reqHeaders.isBlank()) reqHeaders = DEFAULT_ALLOWED_HEADERS;
 
             Response preflight = Response.ok()
-                    .header("Access-Control-Allow-Origin", origin) // нельзя "*", т.к. шлём креды
+                    .header("Access-Control-Allow-Origin", origin)
                     .header("Vary", "Origin")
                     .header("Access-Control-Allow-Credentials", "true")
                     .header("Access-Control-Allow-Methods", ALLOWED_METHODS)

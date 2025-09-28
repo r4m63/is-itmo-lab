@@ -3,9 +3,13 @@ package ru.itmo.isitmolab.dao;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
+import jakarta.persistence.criteria.*;
 import jakarta.transaction.Transactional;
+import ru.itmo.isitmolab.dto.GridTableRequest;
 import ru.itmo.isitmolab.model.Vehicle;
+import ru.itmo.isitmolab.util.gridtable.GridTablePredicateBuilder;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -16,13 +20,12 @@ public class VehicleDao {
     EntityManager em;
 
     @Transactional
-    public Vehicle save(Vehicle v) {
+    public void save(Vehicle v) {
         if (v.getId() == null) {
             em.persist(v);
             em.flush();
-            return v;
         } else {
-            return em.merge(v);
+            em.merge(v);
         }
     }
 
@@ -59,5 +62,62 @@ public class VehicleDao {
                 .setFirstResult(offset)
                 .setMaxResults(limit)
                 .getResultList();
+    }
+
+    // ===================== AG Grid helpers moved here =====================
+
+    /**
+     * Возвращает страницу данных согласно GridRequest: фильтры, сортировки, пагинация.
+     */
+    public List<Vehicle> findPageByGrid(GridTableRequest req) {
+        final int pageSize = Math.max(1, req.endRow - req.startRow);
+        final int first = Math.max(0, req.startRow);
+
+        CriteriaBuilder cb = em.getCriteriaBuilder();
+
+        CriteriaQuery<Vehicle> cq = cb.createQuery(Vehicle.class);
+        Root<Vehicle> root = cq.from(Vehicle.class);
+
+        // WHERE
+        List<Predicate> predicates = GridTablePredicateBuilder.build(cb, root, req.filterModel);
+        if (!predicates.isEmpty()) {
+            cq.where(predicates.toArray(new Predicate[0]));
+        }
+
+        // ORDER BY
+        if (req.sortModel != null && !req.sortModel.isEmpty()) {
+            List<Order> orders = new ArrayList<>();
+            req.sortModel.forEach(s -> {
+                Path<?> p = GridTablePredicateBuilder.resolvePath(root, s.getColId());
+                orders.add("desc".equalsIgnoreCase(s.getSort()) ? cb.desc(p) : cb.asc(p));
+            });
+            cq.orderBy(orders);
+        } else {
+            cq.orderBy(cb.desc(GridTablePredicateBuilder.resolvePath(root, "creationDateTime")));
+        }
+
+        return em.createQuery(cq)
+                .setFirstResult(first)
+                .setMaxResults(pageSize)
+                .getResultList();
+    }
+
+    /**
+     * Возвращает общее число строк под те же фильтры (для lastRow).
+     */
+    public long countByGrid(GridTableRequest req) {
+        CriteriaBuilder cb = em.getCriteriaBuilder();
+
+        CriteriaQuery<Long> cnt = cb.createQuery(Long.class);
+        Root<Vehicle> cntRoot = cnt.from(Vehicle.class);
+
+        List<Predicate> preds = GridTablePredicateBuilder.build(cb, cntRoot, req.filterModel);
+
+        cnt.select(cb.count(cntRoot));
+        if (!preds.isEmpty()) {
+            cnt.where(preds.toArray(new Predicate[0]));
+        }
+
+        return em.createQuery(cnt).getSingleResult();
     }
 }

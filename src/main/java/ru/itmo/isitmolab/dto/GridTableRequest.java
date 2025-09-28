@@ -13,11 +13,11 @@ import java.util.Map;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class GridRequest {
+public class GridTableRequest {
     @NotNull
     public Integer startRow;
     @NotNull
     public Integer endRow;                      // exclusive
-    public List<SortModel> sortModel;           // [{colId:"name", sort:"asc"}]
+    public List<GridTableSortModel> sortModel;  // [{colId:"name", sort:"asc"}]
     public Map<String, Object> filterModel;     // raw ag-Grid filter model
 }

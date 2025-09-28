@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.Optional;
 
 @ApplicationScoped
-public class VehicleFnDao {
+public class VehicleSpecialDao {
 
     @PersistenceContext(unitName = "studsPU")
     EntityManager em;

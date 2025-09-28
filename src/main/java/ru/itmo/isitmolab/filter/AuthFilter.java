@@ -21,7 +21,6 @@ public class AuthFilter implements ContainerRequestFilter {
     @Context
     HttpServletRequest request;
 
-
     @Override
     public void filter(ContainerRequestContext ctx) throws IOException {
         final String path = ctx.getUriInfo().getPath();

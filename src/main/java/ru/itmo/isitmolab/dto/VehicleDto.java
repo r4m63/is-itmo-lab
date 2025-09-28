@@ -55,19 +55,22 @@ public class VehicleDto {
     @NotNull(message = "Выберите fuelType.")
     private FuelType fuelType;
 
+    /** ISO-строка времени создания, отдаем на фронт (с миллисекундами) */
     private String creationDate;
 
+    /** ISO с миллисекундами, без таймзоны: 2025-09-27T13:05:07.123 */
     private static final DateTimeFormatter ISO_MILLIS =
             DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS");
 
-    public static VehicleDto fromEntity(Vehicle v) {
+    /** Entity -> DTO  */
+    public static VehicleDto toDto(Vehicle v) {
         if (v == null) return null;
 
         String createdIso = null;
         if (v.getCreationDateTime() != null) {
             createdIso = v.getCreationDateTime()
-                    .truncatedTo(ChronoUnit.MILLIS)
-                    .format(ISO_MILLIS);
+                    .truncatedTo(ChronoUnit.MILLIS)  // обрезаем наносекунды до миллисекунд
+                    .format(ISO_MILLIS);             // форматируем как ISO с миллисекундами
         }
 
         return VehicleDto.builder()
@@ -88,19 +91,23 @@ public class VehicleDto {
                 .build();
     }
 
+    /** DTO -> Entity (в target либо создаём новый, либо обновляем переданный) */
     public static Vehicle toEntity(VehicleDto d, Vehicle target) {
         if (d == null) return null;
         if (target == null) target = new Vehicle();
 
+        // Простейшая нормализация входных данных
         target.setName(d.getName() != null ? d.getName().trim() : null);
 
-        CoordinatesDto cd = d.getCoordinates();
+        // Координаты (создаём, если в target их ещё нет)
         Coordinates coords = target.getCoordinates();
         if (coords == null) coords = new Coordinates();
+        CoordinatesDto cd = d.getCoordinates();
         coords.setX(cd != null ? cd.getX() : null);
         coords.setY(cd != null ? cd.getY() : null);
         target.setCoordinates(coords);
 
+        // Прочие поля 1-в-1
         target.setType(d.getType());
         target.setEnginePower(d.getEnginePower());
         target.setNumberOfWheels(d.getNumberOfWheels());
@@ -109,9 +116,11 @@ public class VehicleDto {
         target.setFuelConsumption(d.getFuelConsumption());
         target.setFuelType(d.getFuelType());
 
+        // Гарантируем, что дата создания задана при создании новой сущности
         if (target.getCreationDateTime() == null) {
             target.setCreationDateTime(LocalDateTime.now());
         }
+
         return target;
     }
 }

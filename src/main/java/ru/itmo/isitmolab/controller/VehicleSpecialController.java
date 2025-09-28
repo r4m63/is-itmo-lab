@@ -6,7 +6,7 @@ import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import ru.itmo.isitmolab.dto.VehicleDto;
-import ru.itmo.isitmolab.service.VehicleFnService;
+import ru.itmo.isitmolab.service.VehicleSpecialService;
 
 import java.util.List;
 import java.util.Map;
@@ -17,7 +17,7 @@ import java.util.Map;
 public class VehicleSpecialController {
 
     @Inject
-    VehicleFnService service;
+    VehicleSpecialService service;
 
     @GET
     @Path("/min-distance")

@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class SortModel {
+public class GridTableSortModel {
     public String colId;
     public String sort; // "asc" | "desc"
 }

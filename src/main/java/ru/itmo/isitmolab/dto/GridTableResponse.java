@@ -11,7 +11,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class GridResponse<T> {
+public class GridTableResponse<T> {
     public List<T> rows;
     public Integer lastRow; // total count
 }
