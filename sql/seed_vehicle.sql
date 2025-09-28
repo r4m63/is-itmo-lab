@@ -7,7 +7,7 @@
 
 BEGIN;
 
--- 1) гарантируем, что есть админ, от имени которого создаём записи
+-- гарантируем, что есть админ, от имени которого создаём записи
 INSERT INTO admin (login, pass_hash, salt)
 VALUES ('seed_admin', 'seed_pass_hash_for_demo', 'seed_salt_for_demo')
 ON CONFLICT (login) DO NOTHING;
@@ -21,7 +21,6 @@ ins AS (
       name,
       coordinates_x,
       coordinates_y,
-      -- creation_date -- у тебя DEFAULT now(), явно не задаём
       type,
       engine_power,
       number_of_wheels,
