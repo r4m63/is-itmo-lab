@@ -3,6 +3,7 @@ package ru.itmo.isitmolab.service;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.transaction.Transactional;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
@@ -18,6 +19,7 @@ import ru.itmo.isitmolab.ws.VehicleWsHub;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 @ApplicationScoped
 public class VehicleService {
@@ -109,6 +111,21 @@ public class VehicleService {
                 .toList();
 
         return new GridTableResponse<>(dtos, (int) total);
+    }
+
+    public List<Vehicle> findByOwner(Long ownerId) {
+        return vehicleDao.findByOwner(ownerId);
+    }
+
+    @Transactional
+    public int reassignOwnerBulk(Long fromOwnerId, Long toOwnerId) {
+        if (Objects.equals(fromOwnerId, toOwnerId)) {
+            throw new WebApplicationException("Нельзя переназначать на того же владельца", Response.Status.BAD_REQUEST);
+        }
+        if (!personDao.existsById(toOwnerId)) {
+            throw new WebApplicationException("Целевой владелец не найден: " + toOwnerId, Response.Status.BAD_REQUEST);
+        }
+        return vehicleDao.reassignOwner(fromOwnerId, toOwnerId);
     }
 
 }

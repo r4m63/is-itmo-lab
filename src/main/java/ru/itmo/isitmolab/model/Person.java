@@ -10,6 +10,12 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 import java.util.List;
 
+@NamedEntityGraph(
+        name = "Person.withAdmin",
+        attributeNodes = {
+                @NamedAttributeNode("admin")
+        }
+)
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -26,7 +32,7 @@ public class Person {
     @Column(name = "full_name", nullable = false)
     private String fullName;
 
-    @Column(name = "creation_time", nullable = false, updatable = false, columnDefinition = "timestamp default now()")
+    @Column(name = "creation_time", nullable = false, updatable = false, insertable = false, columnDefinition = "timestamp default now()")
     private LocalDateTime creationTime;
 
     @ManyToOne(optional = false, fetch = FetchType.LAZY)
@@ -38,3 +44,4 @@ public class Person {
     private List<Vehicle> vehicles;
 
 }
+

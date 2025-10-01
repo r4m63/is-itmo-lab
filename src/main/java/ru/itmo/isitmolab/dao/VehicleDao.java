@@ -7,6 +7,7 @@ import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.criteria.*;
 import jakarta.transaction.Transactional;
 import ru.itmo.isitmolab.dto.GridTableRequest;
+import ru.itmo.isitmolab.model.Person;
 import ru.itmo.isitmolab.model.Vehicle;
 import ru.itmo.isitmolab.util.gridtable.GridTablePredicateBuilder;
 
@@ -140,4 +141,29 @@ public class VehicleDao {
             return g;
         }
     }
+
+    public long countByOwnerId(Long ownerId) {
+        return em.createQuery(
+                        "select count(v) from Vehicle v where v.owner.id = :oid", Long.class)
+                .setParameter("oid", ownerId)
+                .getSingleResult();
+    }
+
+    @Transactional
+    public int reassignOwner(Long fromPersonId, Long toPersonId) {
+        Person toRef = em.getReference(Person.class, toPersonId);
+        // Bulk update — быстро и без загрузки сущностей в память
+        return em.createQuery(
+                        "update Vehicle v set v.owner = :to where v.owner.id = :from")
+                .setParameter("to", toRef)
+                .setParameter("from", fromPersonId)
+                .executeUpdate();
+    }
+
+    public List<Vehicle> findByOwner(Long ownerId) {
+        return em.createQuery("select v from Vehicle v where v.owner.id = :oid order by v.id asc", Vehicle.class)
+                .setParameter("oid", ownerId)
+                .getResultList();
+    }
+
 }

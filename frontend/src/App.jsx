@@ -6,6 +6,7 @@ import NotFoundPage from "./page/notFoundPage.jsx";
 import {toast} from "sonner";
 import useAuthStore from "./store/auth.js";
 import {API_BASE} from "../cfg.js";
+import PersonPage from "./page/personPage.jsx";
 
 export default function App() {
 
@@ -71,6 +72,13 @@ export default function App() {
                         <MainPage/>
                     </PrivateRoute>
                     // <MainPage/>
+                }/>
+
+                <Route path="/person" element={
+                    <PrivateRoute>
+                        <PersonPage/>
+                    </PrivateRoute>
+                    // <PersonPage/>
                 }/>
 
                 {/* 404 */}

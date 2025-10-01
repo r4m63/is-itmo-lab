@@ -2,19 +2,8 @@
 
 import {useCallback, useEffect, useMemo, useRef, useState} from "react";
 import {
-    Button,
-    Input,
-    Modal,
-    ModalBody,
-    ModalContent,
-    ModalFooter,
-    ModalHeader,
-    Popover,
-    PopoverContent,
-    PopoverTrigger,
-    Select,
-    SelectItem,
-    useDisclosure
+    Button, Input, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader,
+    Popover, PopoverContent, PopoverTrigger, Select, SelectItem, useDisclosure
 } from "@heroui/react";
 import {toast} from "sonner";
 import styles from "./mainPage.module.css";
@@ -22,6 +11,7 @@ import {useNavigate} from "react-router-dom";
 import useAuthStore from "../store/auth.js";
 import {API_BASE} from "../../cfg.js";
 import VehicleTable from "../component/vehicleTable.jsx";
+import OwnerPicker from "../component/ownerPicker.jsx";
 
 const VEHICLE_TYPES = ["CAR", "HELICOPTER", "MOTORCYCLE", "CHOPPER"];
 const FUEL_TYPES = ["KEROSENE", "MANPOWER", "NUCLEAR"];
@@ -43,16 +33,14 @@ export default function MainPage() {
     const [fuelConsumption, setFuelConsumption] = useState("");
     const [fuelType, setFuelType] = useState("");
 
+    // выбор владельца теперь через OwnerPicker
     const [ownerId, setOwnerId] = useState("");
     const [ownerName, setOwnerName] = useState("");
-    const [persons, setPersons] = useState([]);
-    const [personsLoaded, setPersonsLoaded] = useState(false);
 
     const {isOpen, onOpen, onOpenChange} = useDisclosure();
 
     const [tableControls, setTableControls] = useState(null);
-    const [refreshGrid, setRefreshGrid] = useState(() => () => {
-    });
+    const [refreshGrid, setRefreshGrid] = useState(() => () => {});
 
     const wsRef = useRef(null);
     const reconnectTimerRef = useRef(null);
@@ -79,9 +67,7 @@ export default function MainPage() {
             const ws = new WebSocket(WS_URL);
             wsRef.current = ws;
 
-            ws.onopen = () => {
-                retry = 1000;
-            };
+            ws.onopen = () => { retry = 1000; };
             ws.onmessage = (evt) => {
                 const msg = (evt.data || "").toString().trim();
                 if (msg === "refresh") refreshGrid?.();
@@ -93,10 +79,7 @@ export default function MainPage() {
                 }, retry);
             };
             ws.onerror = () => {
-                try {
-                    ws.close();
-                } catch {
-                }
+                try { ws.close(); } catch {}
             };
         };
 
@@ -107,33 +90,9 @@ export default function MainPage() {
         connectWs();
         return () => {
             clearTimeout(reconnectTimerRef.current);
-            try {
-                wsRef.current?.close();
-            } catch {
-            }
+            try { wsRef.current?.close(); } catch {}
         };
     }, [connectWs]);
-
-    const loadPersons = useCallback(async () => {
-        try {
-            const res = await fetch(`${API_BASE}/api/persons`, {
-                credentials: "include",
-                headers: {"Accept": "application/json"}
-            });
-            if (!res.ok) throw new Error(String(res.status));
-            const arr = await res.json();
-            setPersons(Array.isArray(arr) ? arr : []);
-            setPersonsLoaded(true);
-        } catch (e) {
-            console.warn("Failed to load persons list, fallback to manual ownerId:", e);
-            setPersons([]);
-            setPersonsLoaded(false);
-        }
-    }, []);
-
-    useEffect(() => {
-        loadPersons();
-    }, [loadPersons]);
 
     const openNewVehicleModal = () => {
         setActiveVehicle(null);
@@ -164,7 +123,7 @@ export default function MainPage() {
         setDistanceTravelled(vehicle.distanceTravelled ?? "");
         setFuelConsumption(vehicle.fuelConsumption ?? "");
         setFuelType(vehicle.fuelType);
-        setOwnerId(vehicle.ownerId ?? "");
+        setOwnerId(vehicle.ownerId ? String(vehicle.ownerId) : "");
         setOwnerName(vehicle.ownerName ?? "");
         onOpen();
     };
@@ -257,10 +216,7 @@ export default function MainPage() {
                 return;
             }
             let errorData = {};
-            try {
-                errorData = await res.json();
-            } catch {
-            }
+            try { errorData = await res.json(); } catch {}
             toast.error(errorData.message || `Error: ${res.status}`);
         } catch (e) {
             console.error(e);
@@ -284,7 +240,6 @@ export default function MainPage() {
     };
 
     const {isOpen: isPresetOpen, onOpen: onPresetOpen, onOpenChange: onPresetOpenChange} = useDisclosure();
-
     const [presetFuelGt, setPresetFuelGt] = useState("");
     const [presetType, setPresetType] = useState("");
     const [presetEngMin, setPresetEngMin] = useState("");
@@ -384,9 +339,7 @@ export default function MainPage() {
         }
     };
 
-    const handleResetFilters = () => {
-        tableControls?.clearFilters();
-    };
+    const handleResetFilters = () => { tableControls?.clearFilters(); };
 
     return (
         <>
@@ -403,6 +356,9 @@ export default function MainPage() {
                             </Button>
                             <Button color="warning" className={styles.control} onPress={handleResetFilters}>
                                 Сбросить фильтры
+                            </Button>
+                            <Button color="primary" className={styles.control} onPress={() => navigate("/person")}>
+                                Person
                             </Button>
                         </div>
                     </div>
@@ -441,43 +397,20 @@ export default function MainPage() {
                                 <Input label="Название" variant="bordered" value={name}
                                        onChange={(e) => setName(e.target.value)} isRequired/>
 
-                                {persons.length > 0 ? (
-                                    <Select
-                                        label="Владелец"
-                                        variant="bordered"
-                                        selectedKeys={ownerId ? [String(ownerId)] : []}
-                                        onChange={(e) => {
-                                            const val = e.target.value;
-                                            setOwnerId(val);
-                                            const p = persons.find(pp => String(pp.id) === String(val));
-                                            setOwnerName(p?.fullName || "");
-                                        }}
-                                        isRequired
-                                    >
-                                        {persons.map(p => (
-                                            <SelectItem key={String(p.id)} value={String(p.id)}>
-                                                {p.fullName} (id {p.id})
-                                            </SelectItem>
-                                        ))}
-                                    </Select>
-                                ) : (
-                                    <div className="grid grid-cols-2 gap-3">
-                                        <Input
-                                            type="number"
-                                            label="Owner ID"
-                                            variant="bordered"
-                                            value={ownerId}
-                                            onChange={(e) => setOwnerId(e.target.value)}
-                                            isRequired
-                                        />
-                                        <Input
-                                            label="Owner name (read-only, если список недоступен)"
-                                            variant="bordered"
-                                            value={ownerName}
-                                            onChange={(e) => setOwnerName(e.target.value)}
-                                        />
-                                    </div>
-                                )}
+                                {/* новый выбор владельца */}
+                                <OwnerPicker
+                                    value={{ id: ownerId ? Number(ownerId) : null, fullName: ownerName || "" }}
+                                    onChange={(sel) => {
+                                        if (sel?.id) {
+                                            setOwnerId(String(sel.id));
+                                            setOwnerName(sel.fullName || "");
+                                        } else {
+                                            // пользователь не выбрал из подсказки
+                                            setOwnerId("");
+                                            setOwnerName(sel?.fullName || "");
+                                        }
+                                    }}
+                                />
 
                                 <div className="grid grid-cols-2 gap-3">
                                     <Input type="number" label="Координата X" variant="bordered" value={coordX}
@@ -578,9 +511,7 @@ export default function MainPage() {
                                 </div>
 
                                 <div className="space-y-2">
-                                    <div className="text-sm font-medium opacity-80">Найти все транспортные средства
-                                        заданного типа
-                                    </div>
+                                    <div className="text-sm font-medium opacity-80">Найти все транспортные средства заданного типа</div>
                                     <div className="flex items-center gap-3">
                                         <Select label="Тип ТС" selectedKeys={presetType ? [presetType] : []}
                                                 onChange={(e) => setPresetType(e.target.value)}

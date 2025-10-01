@@ -75,4 +75,37 @@ public class VehicleController {
         return Response.ok(result).build();
     }
 
+
+//    public record IdName(Long id, String name) {}
+//
+//    /** Список машин по владельцу (минимальный dto: id, name) */
+//    @GET
+//    @Path("/owned-by/{ownerId}")
+//    public List<IdName> listByOwner(@PathParam("ownerId") Long ownerId) {
+//        return vehicleService.findByOwner(ownerId).stream()
+//                .map(v -> new IdName(v.getId(), v.getName()))
+//                .toList();
+//    }
+
+    @GET
+    @Path("/owned-by/{ownerId}")
+    public List<Map<String, Object>> listByOwner(@PathParam("ownerId") Long ownerId) {
+        return vehicleService.findByOwner(ownerId).stream()
+                .map(v -> Map.<String, Object>of(
+                        "id", v.getId(),
+                        "name", v.getName()
+                ))
+                .toList();
+    }
+
+
+
+    @POST @Path("/reassign-owner-bulk")
+    public Map<String, Object> reassignOwnerBulk(Map<String, Object> body) {
+        Long fromOwnerId = body.get("fromOwnerId") == null ? null : Long.valueOf(body.get("fromOwnerId").toString());
+        Long toOwnerId   = body.get("toOwnerId")   == null ? null : Long.valueOf(body.get("toOwnerId").toString());
+        int updated = vehicleService.reassignOwnerBulk(fromOwnerId, toOwnerId);
+        return Map.of("updated", updated);
+    }
+
 }
