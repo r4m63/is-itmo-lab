@@ -23,7 +23,7 @@ public class VehicleSpecialController {
     @Path("/min-distance")
     public Response minDistance() {
         return service.findAnyWithMinDistance()
-                .map(entity -> Response.ok(entity).build())
+                .map(dto -> Response.ok(dto).build())
                 .orElseGet(() -> Response.status(Response.Status.NO_CONTENT).build());
     }
 

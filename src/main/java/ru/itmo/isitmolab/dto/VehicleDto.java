@@ -13,7 +13,6 @@ import ru.itmo.isitmolab.model.FuelType;
 import ru.itmo.isitmolab.model.Vehicle;
 import ru.itmo.isitmolab.model.VehicleType;
 
-import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 
@@ -55,29 +54,37 @@ public class VehicleDto {
     @NotNull(message = "Выберите fuelType.")
     private FuelType fuelType;
 
+    @NotNull(message = "ownerId обязателен.")
+    private Long ownerId;
+
+    private String ownerName;
+    private Long adminId;
+
     private String creationDate;
 
     private static final DateTimeFormatter ISO_MILLIS =
             DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS");
 
-
     public static VehicleDto toDto(Vehicle v) {
         if (v == null) return null;
-
         String createdIso = null;
-        if (v.getCreationDateTime() != null) {
-            createdIso = v.getCreationDateTime()
-                    .truncatedTo(ChronoUnit.MILLIS)
-                    .format(ISO_MILLIS);
+        if (v.getCreationTime() != null) {
+            createdIso = v.getCreationTime().truncatedTo(ChronoUnit.MILLIS).format(ISO_MILLIS);
         }
-
+        CoordinatesDto coords = null;
+        if (v.getCoordinates() != null) {
+            coords = CoordinatesDto.builder()
+                    .x(v.getCoordinates().getX())
+                    .y(v.getCoordinates().getY())
+                    .build();
+        }
+        Long ownerId = (v.getOwner() != null) ? v.getOwner().getId() : null;
+        String ownerName = (v.getOwner() != null) ? v.getOwner().getFullName() : null;
+        Long adminId = (v.getAdmin() != null) ? v.getAdmin().getId() : null;
         return VehicleDto.builder()
                 .id(v.getId())
                 .name(v.getName())
-                .coordinates(new CoordinatesDto(
-                        v.getCoordinates() != null ? v.getCoordinates().getX() : null,
-                        v.getCoordinates() != null ? v.getCoordinates().getY() : null
-                ))
+                .coordinates(coords)
                 .type(v.getType())
                 .enginePower(v.getEnginePower())
                 .numberOfWheels(v.getNumberOfWheels())
@@ -85,6 +92,9 @@ public class VehicleDto {
                 .distanceTravelled(v.getDistanceTravelled())
                 .fuelConsumption(v.getFuelConsumption())
                 .fuelType(v.getFuelType())
+                .ownerId(ownerId)
+                .ownerName(ownerName)
+                .adminId(adminId)
                 .creationDate(createdIso)
                 .build();
     }
@@ -92,28 +102,28 @@ public class VehicleDto {
     public static Vehicle toEntity(VehicleDto d, Vehicle target) {
         if (d == null) return null;
         if (target == null) target = new Vehicle();
-
         target.setName(d.getName() != null ? d.getName().trim() : null);
-
-        Coordinates coords = target.getCoordinates();
-        if (coords == null) coords = new Coordinates();
+        Coordinates coords = (target.getCoordinates() != null) ? target.getCoordinates() : new Coordinates();
         CoordinatesDto cd = d.getCoordinates();
-        coords.setX(cd != null ? cd.getX() : null);
-        coords.setY(cd != null ? cd.getY() : null);
+        if (cd != null) {
+            coords.setX(cd.getX());
+            coords.setY(cd.getY());
+        } else {
+            coords.setX(null);
+            coords.setY(null);
+        }
         target.setCoordinates(coords);
-
         target.setType(d.getType());
         target.setEnginePower(d.getEnginePower());
-        target.setNumberOfWheels(d.getNumberOfWheels());
+        if (d.getNumberOfWheels() != null) {
+            target.setNumberOfWheels(d.getNumberOfWheels());
+        }
         target.setCapacity(d.getCapacity());
         target.setDistanceTravelled(d.getDistanceTravelled());
-        target.setFuelConsumption(d.getFuelConsumption());
-        target.setFuelType(d.getFuelType());
-
-        if (target.getCreationDateTime() == null) {
-            target.setCreationDateTime(LocalDateTime.now());
+        if (d.getFuelConsumption() != null) {
+            target.setFuelConsumption(d.getFuelConsumption());
         }
-
+        target.setFuelType(d.getFuelType());
         return target;
     }
 }

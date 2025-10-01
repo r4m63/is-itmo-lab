@@ -8,13 +8,20 @@ import lombok.*;
 
 import java.time.LocalDateTime;
 
-@Entity
-@Table(name = "vehicle")
+@NamedEntityGraph(
+        name = "Vehicle.withOwnerAdmin",
+        attributeNodes = {
+                @NamedAttributeNode("owner"),
+                @NamedAttributeNode("admin")
+        }
+)
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@Entity
+@Table(name = "vehicle")
 public class Vehicle {
 
     @Id
@@ -33,8 +40,8 @@ public class Vehicle {
     })
     private Coordinates coordinates;
 
-    @Column(name = "creation_date", nullable = false, updatable = false)
-    private LocalDateTime creationDateTime;
+    @Column(name = "creation_time", nullable = false, updatable = false, columnDefinition = "timestamp default now()")
+    private LocalDateTime creationTime;
 
     @NotNull
     @Enumerated(EnumType.STRING)
@@ -65,15 +72,18 @@ public class Vehicle {
     @Column(name = "fuel_type", nullable = false)
     private FuelType fuelType;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "admin_id", nullable = false,
-            foreignKey = @ForeignKey(name = "fk_vehicle_admin"))
-    private Admin createdBy;
+    @ManyToOne(optional = false, fetch = FetchType.LAZY)
+    @JoinColumn(name = "admin_id", nullable = false, foreignKey = @ForeignKey(name = "vehicle_admin_id_fkey"))
+    private Admin admin;
+
+    @ManyToOne(optional = false, fetch = FetchType.LAZY)
+    @JoinColumn(name = "owner_id", nullable = false, foreignKey = @ForeignKey(name = "vehicle_owner_id_fkey"))
+    private Person owner;
 
     @PrePersist
     void onCreate() {
-        if (creationDateTime == null) {
-            creationDateTime = LocalDateTime.now();
+        if (creationTime == null) {
+            creationTime = LocalDateTime.now();
         }
     }
 

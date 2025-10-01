@@ -2,41 +2,87 @@ package ru.itmo.isitmolab.service;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import jakarta.persistence.EntityGraph;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
+import jakarta.transaction.Transactional;
 import ru.itmo.isitmolab.dao.VehicleSpecialDao;
 import ru.itmo.isitmolab.dto.VehicleDto;
+import ru.itmo.isitmolab.model.Vehicle;
 
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 @ApplicationScoped
 public class VehicleSpecialService {
 
-    @Inject
-    VehicleSpecialDao fnDao;
+    @Inject VehicleSpecialDao specialDao;
 
+    @PersistenceContext(unitName = "studsPU")
+    EntityManager em;
+
+    @SuppressWarnings("unchecked")
+    private EntityGraph<Vehicle> graph() {
+        return (EntityGraph<Vehicle>) em.createEntityGraph("Vehicle.withOwnerAdmin");
+    }
+
+    /* =============== helpers =============== */
+
+    /** Грузим один Vehicle по id с графом. */
+    private Optional<Vehicle> loadOne(Long id) {
+        if (id == null) return Optional.empty();
+        Map<String, Object> hints = Map.of("jakarta.persistence.loadgraph", graph());
+        return Optional.ofNullable(em.find(Vehicle.class, id, hints));
+    }
+
+    /** Грузим список по ids с графом. */
+    private List<Vehicle> loadManyPreserveOrder(List<Long> ids) {
+        if (ids == null || ids.isEmpty()) return List.of();
+
+        List<Vehicle> items = em.createQuery(
+                        "select v from Vehicle v where v.id in :ids", Vehicle.class)
+                .setParameter("ids", ids)
+                .setHint("jakarta.persistence.loadgraph", graph())
+                .getResultList();
+
+        // Сохраняем порядок, заданный функцией (ids):
+        Map<Long, Vehicle> byId = new HashMap<>(items.size() * 2);
+        for (Vehicle v : items) byId.put(v.getId(), v);
+        List<Vehicle> ordered = new ArrayList<>(ids.size());
+        for (Long id : ids) {
+            Vehicle v = byId.get(id);
+            if (v != null) ordered.add(v);
+        }
+        return ordered;
+    }
+
+    /* =============== API =============== */
+
+    @Transactional
     public Optional<VehicleDto> findAnyWithMinDistance() {
-        return fnDao.findAnyWithMinDistance().map(VehicleDto::toDto);
+        return specialDao.findAnyWithMinDistanceId()
+                .flatMap(this::loadOne)
+                .map(VehicleDto::toDto);
     }
 
-    public long countFuelConsumptionGreaterThan(float value) {
-        return fnDao.countFuelConsumptionGreaterThan(value);
+    public long countFuelConsumptionGreaterThan(float v) {
+        return specialDao.countFuelConsumptionGreaterThan(v);
     }
 
-    public List<VehicleDto> listFuelConsumptionGreaterThan(float value) {
-        return fnDao.listFuelConsumptionGreaterThan(value).stream()
-                .map(VehicleDto::toDto)
-                .toList();
+    @Transactional
+    public List<VehicleDto> listFuelConsumptionGreaterThan(float v) {
+        List<Long> ids = specialDao.listFuelConsumptionGreaterThanIds(v);
+        return loadManyPreserveOrder(ids).stream().map(VehicleDto::toDto).toList();
     }
 
+    @Transactional
     public List<VehicleDto> listByType(String type) {
-        return fnDao.listByType(type).stream()
-                .map(VehicleDto::toDto)
-                .toList();
+        List<Long> ids = specialDao.listByTypeIds(type);
+        return loadManyPreserveOrder(ids).stream().map(VehicleDto::toDto).toList();
     }
 
-    public List<VehicleDto> listByEnginePowerBetween(int min, int max) {
-        return fnDao.listByEnginePowerBetween(min, max).stream()
-                .map(VehicleDto::toDto)
-                .toList();
+    @Transactional
+    public List<VehicleDto> listByEnginePowerBetween(Integer min, Integer max) {
+        List<Long> ids = specialDao.listByEnginePowerBetweenIds(min, max);
+        return loadManyPreserveOrder(ids).stream().map(VehicleDto::toDto).toList();
     }
 }

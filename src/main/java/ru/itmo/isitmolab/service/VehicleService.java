@@ -4,8 +4,10 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import ru.itmo.isitmolab.dao.AdminDao;
+import ru.itmo.isitmolab.dao.PersonDao;
 import ru.itmo.isitmolab.dao.VehicleDao;
 import ru.itmo.isitmolab.dto.GridTableRequest;
 import ru.itmo.isitmolab.dto.GridTableResponse;
@@ -15,6 +17,7 @@ import ru.itmo.isitmolab.model.Vehicle;
 import ru.itmo.isitmolab.ws.VehicleWsHub;
 
 import java.util.List;
+import java.util.Map;
 
 @ApplicationScoped
 public class VehicleService {
@@ -29,6 +32,8 @@ public class VehicleService {
     private VehicleWsHub wsHub;
     @Inject
     private VehicleDao vehicleDao;
+    @Inject
+    private PersonDao personDao;
 
     public Long createNewVehicle(VehicleDto dto, HttpServletRequest req) {
         Long adminId = sessionService.getCurrentUserId(req);
@@ -36,8 +41,23 @@ public class VehicleService {
                 .orElseThrow(() -> new WebApplicationException(
                         "Admin not found: " + adminId, Response.Status.UNAUTHORIZED));
 
+        if (dto.getOwnerId() == null) {
+            throw new WebApplicationException("ownerId is required", Response.Status.BAD_REQUEST);
+        }
+
+
+        var owner = personDao.findById(dto.getOwnerId())
+                .orElseThrow(() -> new WebApplicationException(
+                        Response.status(Response.Status.BAD_REQUEST)
+                                .type(MediaType.APPLICATION_JSON_TYPE)
+                                .entity(Map.of("message", "Не найден owner с id " + dto.getOwnerId()))
+                                .build()
+                ));
+
         Vehicle v = VehicleDto.toEntity(dto, null);
-        v.setCreatedBy(admin);
+        v.setAdmin(admin);
+        v.setOwner(owner);
+
         dao.save(v);
         wsHub.broadcastText("refresh");
         return v.getId();
@@ -47,6 +67,15 @@ public class VehicleService {
         Vehicle current = dao.findById(id)
                 .orElseThrow(() -> new WebApplicationException(
                         "Vehicle not found: " + id, Response.Status.NOT_FOUND));
+
+        if (dto.getOwnerId() != null &&
+                (current.getOwner() == null || !dto.getOwnerId().equals(current.getOwner().getId()))) {
+            var newOwner = personDao.findById(dto.getOwnerId())
+                    .orElseThrow(() -> new WebApplicationException(
+                            "Person (owner) not found: " + dto.getOwnerId(), Response.Status.BAD_REQUEST));
+            current.setOwner(newOwner);
+        }
+
         VehicleDto.toEntity(dto, current);
         dao.save(current);
         wsHub.broadcastText("refresh");

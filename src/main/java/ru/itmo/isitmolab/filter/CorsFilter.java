@@ -16,7 +16,8 @@ public class CorsFilter implements ContainerRequestFilter, ContainerResponseFilt
 
     private static final Set<String> ALLOWED_ORIGINS = Set.of(
             "http://localhost:5173",
-            "http://127.0.0.1:5173"
+            "http://127.0.0.1:5173",
+            "http://localhost:22821"
     );
 
     private static final String ALLOWED_METHODS = "GET,POST,PUT,DELETE,OPTIONS";

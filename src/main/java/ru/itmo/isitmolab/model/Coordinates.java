@@ -14,6 +14,7 @@ import lombok.*;
 @Builder
 public class Coordinates {
 
+    @NotNull
     @DecimalMax(value = "613")
     @Column(name = "coordinates_x")
     private Double x;

@@ -18,22 +18,34 @@ import static ru.itmo.isitmolab.util.gridtable.DateParsers.parseToLocalDate;
 public final class GridTablePredicateBuilder {
 
     public static Path<?> resolvePath(Root<Vehicle> root, String colId) {
-        String norm = ColumnMapper.normalize(colId);
-        if (norm.contains(".")) {
-            Path<?> p = root;
-            for (String part : norm.split("\\.")) {
-                p = p.get(part);
+        if (colId == null || colId.isBlank()) return root.get("id");
+
+        String[] parts = colId.split("\\.");
+        Path<?> p = root;
+        From<?, ?> from = root;
+
+        for (String part : parts) {
+            if ("owner".equals(part) || "admin".equals(part)) {
+                Join<?, ?> existing = null;
+                for (Join<?, ?> j : from.getJoins()) {
+                    if (j.getAttribute().getName().equals(part)) {
+                        existing = j;
+                        break;
+                    }
+                }
+                from = (existing != null) ? existing : from.join(part, JoinType.LEFT);
+                p = from;
+                continue;
             }
-            return p;
+
+            p = p.get(part);
+            if (p instanceof From<?, ?> f) from = f;
         }
-        return root.get(norm);
+        return p;
     }
 
-    public static List<Predicate> build(
-            CriteriaBuilder cb,
-            Root<Vehicle> root,
-            Map<String, Object> filterModel
-    ) {
+
+    public static List<Predicate> build(CriteriaBuilder cb, Root<Vehicle> root, Map<String, Object> filterModel) {
         List<Predicate> out = new ArrayList<>();
         if (filterModel == null || filterModel.isEmpty()) return out;
 
@@ -49,7 +61,8 @@ public final class GridTablePredicateBuilder {
                 case "number" -> handleNumber(cb, out, path, fm);
                 case "date" -> handleDate(cb, out, path, fm);
                 case "set" -> handleSet(cb, out, path, fm);
-                default -> { }
+                default -> {
+                }
             }
         }
         return out;
@@ -79,19 +92,19 @@ public final class GridTablePredicateBuilder {
 
         Class<?> jt = path.getJavaType();
 
-        if (jt == Integer.class) {
+        if (jt == Integer.class || jt == Integer.TYPE) {
             addNumber(cb, out, type, path.as(Integer.class),
                     f1 != null ? f1.intValue() : null,
                     f2 != null ? f2.intValue() : null);
-        } else if (jt == Long.class) {
+        } else if (jt == Long.class || jt == Long.TYPE) {
             addNumber(cb, out, type, path.as(Long.class),
                     f1 != null ? f1.longValue() : null,
                     f2 != null ? f2.longValue() : null);
-        } else if (jt == Float.class) {
+        } else if (jt == Float.class || jt == Float.TYPE) {
             addNumber(cb, out, type, path.as(Float.class),
                     f1 != null ? f1.floatValue() : null,
                     f2 != null ? f2.floatValue() : null);
-        } else if (jt == Double.class) {
+        } else if (jt == Double.class || jt == Double.TYPE) {
             addNumber(cb, out, type, path.as(Double.class),
                     f1 != null ? f1.doubleValue() : null,
                     f2 != null ? f2.doubleValue() : null);
@@ -176,10 +189,10 @@ public final class GridTablePredicateBuilder {
     private static Object castForPath(Path<?> path, String value) {
         Class<?> t = path.getJavaType();
         if (t.isEnum()) return Enum.valueOf((Class<Enum>) t, value);
-        if (t.equals(Integer.class)) return Integer.valueOf(value);
-        if (t.equals(Long.class)) return Long.valueOf(value);
-        if (t.equals(Double.class)) return Double.valueOf(value);
-        if (t.equals(Float.class)) return Float.valueOf(value);
+        if (t.equals(Integer.class) || t.equals(Integer.TYPE)) return Integer.valueOf(value);
+        if (t.equals(Long.class) || t.equals(Long.TYPE)) return Long.valueOf(value);
+        if (t.equals(Double.class) || t.equals(Double.TYPE)) return Double.valueOf(value);
+        if (t.equals(Float.class) || t.equals(Float.TYPE)) return Float.valueOf(value);
         if (t.equals(BigDecimal.class)) return new BigDecimal(value);
         return value;
     }
