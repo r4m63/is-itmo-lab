@@ -43,6 +43,11 @@ export default function MainPage() {
     const [fuelConsumption, setFuelConsumption] = useState("");
     const [fuelType, setFuelType] = useState("");
 
+    const [ownerId, setOwnerId] = useState("");
+    const [ownerName, setOwnerName] = useState("");
+    const [persons, setPersons] = useState([]);
+    const [personsLoaded, setPersonsLoaded] = useState(false);
+
     const {isOpen, onOpen, onOpenChange} = useDisclosure();
 
     const [tableControls, setTableControls] = useState(null);
@@ -77,21 +82,16 @@ export default function MainPage() {
             ws.onopen = () => {
                 retry = 1000;
             };
-
             ws.onmessage = (evt) => {
                 const msg = (evt.data || "").toString().trim();
-                if (msg === "refresh") {
-                    refreshGrid?.();
-                }
+                if (msg === "refresh") refreshGrid?.();
             };
-
             ws.onclose = () => {
                 reconnectTimerRef.current = setTimeout(() => {
-                    retry = Math.min(retry * 2, 10000); // до 10s
+                    retry = Math.min(retry * 2, 10000);
                     openSocket();
                 }, retry);
             };
-
             ws.onerror = () => {
                 try {
                     ws.close();
@@ -114,6 +114,26 @@ export default function MainPage() {
         };
     }, [connectWs]);
 
+    const loadPersons = useCallback(async () => {
+        try {
+            const res = await fetch(`${API_BASE}/api/persons`, {
+                credentials: "include",
+                headers: {"Accept": "application/json"}
+            });
+            if (!res.ok) throw new Error(String(res.status));
+            const arr = await res.json();
+            setPersons(Array.isArray(arr) ? arr : []);
+            setPersonsLoaded(true);
+        } catch (e) {
+            console.warn("Failed to load persons list, fallback to manual ownerId:", e);
+            setPersons([]);
+            setPersonsLoaded(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        loadPersons();
+    }, [loadPersons]);
 
     const openNewVehicleModal = () => {
         setActiveVehicle(null);
@@ -127,21 +147,25 @@ export default function MainPage() {
         setDistanceTravelled("");
         setFuelConsumption("");
         setFuelType("");
+        setOwnerId("");
+        setOwnerName("");
         onOpen();
     };
 
     const openEditVehicleModal = async (vehicle) => {
         setActiveVehicle(vehicle);
         setName(vehicle.name);
-        setCoordX(vehicle.coordinates.x);
-        setCoordY(vehicle.coordinates.y);
+        setCoordX(vehicle.coordinates?.x ?? "");
+        setCoordY(vehicle.coordinates?.y ?? "");
         setType(vehicle.type);
         setEnginePower(vehicle.enginePower ?? "");
-        setNumberOfWheels(vehicle.numberOfWheels);
+        setNumberOfWheels(vehicle.numberOfWheels ?? "");
         setCapacity(vehicle.capacity ?? "");
         setDistanceTravelled(vehicle.distanceTravelled ?? "");
-        setFuelConsumption(vehicle.fuelConsumption);
+        setFuelConsumption(vehicle.fuelConsumption ?? "");
         setFuelType(vehicle.fuelType);
+        setOwnerId(vehicle.ownerId ?? "");
+        setOwnerName(vehicle.ownerName ?? "");
         onOpen();
     };
 
@@ -156,6 +180,9 @@ export default function MainPage() {
         if (enginePower !== "" && Number(enginePower) <= 0) return "enginePower должно быть > 0.";
         if (capacity !== "" && Number(capacity) <= 0) return "capacity должно быть > 0.";
         if (distanceTravelled !== "" && Number(distanceTravelled) <= 0) return "distanceTravelled должно быть > 0.";
+
+        const oid = Number(ownerId);
+        if (!Number.isFinite(oid) || oid <= 0) return "Выберите владельца (owner).";
         return null;
     }
 
@@ -177,6 +204,8 @@ export default function MainPage() {
             distanceTravelled: distanceTravelled === "" ? null : Number(distanceTravelled),
             fuelConsumption: Number(fuelConsumption),
             fuelType: fuelType,
+
+            ownerId: Number(ownerId),
         };
 
         const isEdit = Boolean(activeVehicle?.id);
@@ -204,8 +233,7 @@ export default function MainPage() {
                         toast.error(errorData.message || 'Not correct credentials');
                         break;
                     default:
-                        setIsAuthed(false);
-                        toast.error(`Error: ${res.status} - ${res.statusText}`);
+                        toast.error(errorData.message || `Error: ${res.status} - ${res.statusText}`);
                         break;
                 }
             }
@@ -262,7 +290,6 @@ export default function MainPage() {
     const [presetEngMin, setPresetEngMin] = useState("");
     const [presetEngMax, setPresetEngMax] = useState("");
 
-    // 1) Один с минимальным distanceTravelled — получаем объект и открываем форму редактирования
     const presetMinDistance = async () => {
         try {
             const res = await fetch(`${API_BASE}/api/vehicle/special/min-distance`, {
@@ -284,7 +311,6 @@ export default function MainPage() {
         }
     };
 
-    // 2) Количество fuel > X — показать число + применить фильтр к таблице
     const presetCountFuelGt = async () => {
         const v = Number(presetFuelGt);
         if (isNaN(v) || v <= 0) return toast.warning("Введите корректное значение топлива > 0");
@@ -302,7 +328,6 @@ export default function MainPage() {
         }
     };
 
-    // 3) Список fuel > X — применяем фильтр в таблицу
     const presetListFuelGt = async () => {
         const v = Number(presetFuelGt);
         if (!Number.isFinite(v) || v <= 0) return toast.warning("Введите корректное значение топлива > 0");
@@ -321,7 +346,6 @@ export default function MainPage() {
         }
     };
 
-    // 4) По типу
     const presetListByType = async () => {
         if (!presetType) return toast.warning("Выберите тип");
         try {
@@ -339,7 +363,6 @@ export default function MainPage() {
         }
     };
 
-    // 5) Диапазон мощности
     const presetListByEngineRange = async () => {
         const min = Number(presetEngMin);
         const max = Number(presetEngMax);
@@ -418,6 +441,44 @@ export default function MainPage() {
                                 <Input label="Название" variant="bordered" value={name}
                                        onChange={(e) => setName(e.target.value)} isRequired/>
 
+                                {persons.length > 0 ? (
+                                    <Select
+                                        label="Владелец"
+                                        variant="bordered"
+                                        selectedKeys={ownerId ? [String(ownerId)] : []}
+                                        onChange={(e) => {
+                                            const val = e.target.value;
+                                            setOwnerId(val);
+                                            const p = persons.find(pp => String(pp.id) === String(val));
+                                            setOwnerName(p?.fullName || "");
+                                        }}
+                                        isRequired
+                                    >
+                                        {persons.map(p => (
+                                            <SelectItem key={String(p.id)} value={String(p.id)}>
+                                                {p.fullName} (id {p.id})
+                                            </SelectItem>
+                                        ))}
+                                    </Select>
+                                ) : (
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <Input
+                                            type="number"
+                                            label="Owner ID"
+                                            variant="bordered"
+                                            value={ownerId}
+                                            onChange={(e) => setOwnerId(e.target.value)}
+                                            isRequired
+                                        />
+                                        <Input
+                                            label="Owner name (read-only, если список недоступен)"
+                                            variant="bordered"
+                                            value={ownerName}
+                                            onChange={(e) => setOwnerName(e.target.value)}
+                                        />
+                                    </div>
+                                )}
+
                                 <div className="grid grid-cols-2 gap-3">
                                     <Input type="number" label="Координата X" variant="bordered" value={coordX}
                                            onChange={(e) => setCoordX(e.target.value)} isRequired/>
@@ -486,8 +547,8 @@ export default function MainPage() {
                             <ModalHeader>Пресеты</ModalHeader>
                             <ModalBody className="flex flex-col gap-5">
                                 <div className="space-y-2">
-                                    <div className="text-sm font-medium opacity-80">Вернуть один объект с минимальным
-                                        distanceTravelled
+                                    <div className="text-sm font-medium opacity-80">
+                                        Вернуть один объект с минимальным distanceTravelled
                                     </div>
                                     <div className="flex items-center gap-3">
                                         <Button onPress={presetMinDistance}>Выполнить</Button>
@@ -495,8 +556,8 @@ export default function MainPage() {
                                 </div>
 
                                 <div className="space-y-2">
-                                    <div className="text-sm font-medium opacity-80">Вернуть количество объектов, у
-                                        которых fuelConsumption &gt; X
+                                    <div className="text-sm font-medium opacity-80">
+                                        Вернуть количество объектов, у которых fuelConsumption &gt; X
                                     </div>
                                     <div className="flex items-center gap-3">
                                         <Input label="X (fuelConsumption)" type="number" value={presetFuelGt}
@@ -506,8 +567,8 @@ export default function MainPage() {
                                 </div>
 
                                 <div className="space-y-2">
-                                    <div className="text-sm font-medium opacity-80">Вернуть массив объектов, у которых
-                                        fuelConsumption &gt; X
+                                    <div className="text-sm font-medium opacity-80">
+                                        Вернуть массив объектов, у которых fuelConsumption &gt; X
                                     </div>
                                     <div className="flex items-center gap-3">
                                         <Input label="X (fuelConsumption)" type="number" value={presetFuelGt}
@@ -531,8 +592,8 @@ export default function MainPage() {
                                 </div>
 
                                 <div className="space-y-2">
-                                    <div className="text-sm font-medium opacity-80">Найти все ТС с мощностью двигателя в
-                                        диапазоне [min, max]
+                                    <div className="text-sm font-medium opacity-80">
+                                        Найти все ТС с мощностью двигателя в диапазоне [min, max]
                                     </div>
                                     <div className="grid grid-cols-3 gap-3 items-end">
                                         <Input label="Engine min" type="number" value={presetEngMin}

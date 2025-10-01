@@ -30,9 +30,10 @@ export default function VehicleTable({onOpenEditVehicleModal, onReadyRefresh, on
         {
             headerName: "ID",
             field: "id",
+            colId: "id",               // JPA path
             width: 100,
             sortable: true,
-            sort: "desc",
+            // убрал дефолтный sort, чтобы не мешать пользовательской сортировке
             filter: "agNumberColumnFilter",
             floatingFilter: true
         },
@@ -54,10 +55,37 @@ export default function VehicleTable({onOpenEditVehicleModal, onReadyRefresh, on
                 </button>
             ),
         },
-        {headerName: "Name", field: "name", sortable: true, filter: "agTextColumnFilter", floatingFilter: true},
+        {
+            headerName: "Name",
+            field: "name",
+            colId: "name",
+            sortable: true,
+            filter: "agTextColumnFilter",
+            floatingFilter: true
+        },
+        {
+            headerName: "Owner",
+            field: "ownerName",
+            colId: "owner.fullName",
+            width: 220,
+            sortable: true,
+            filter: "agTextColumnFilter",
+            floatingFilter: true
+        },
+        {headerName: "Owner ID", field: "ownerId", colId: "owner.id", hide: true},
+        {
+            headerName: "Admin ID",
+            field: "adminId",
+            colId: "admin.id",
+            width: 120,
+            sortable: true,
+            filter: "agNumberColumnFilter",
+            floatingFilter: true
+        },
         {
             headerName: "Type",
             field: "type",
+            colId: "type",
             width: 160,
             sortable: true,
             filter: "agTextColumnFilter",
@@ -66,14 +94,16 @@ export default function VehicleTable({onOpenEditVehicleModal, onReadyRefresh, on
         {
             headerName: "Fuel Type",
             field: "fuelType",
+            colId: "fuelType",
             width: 160,
             sortable: true,
             filter: "agTextColumnFilter",
             floatingFilter: true
         },
         {
-            headerName: "Creation Date",
+            headerName: "Created",
             field: "creationDate",
+            colId: "creationTime",
             width: 190,
             sortable: true,
             filter: "agDateColumnFilter",
@@ -106,6 +136,7 @@ export default function VehicleTable({onOpenEditVehicleModal, onReadyRefresh, on
         {
             headerName: "Engine Power",
             field: "enginePower",
+            colId: "enginePower",
             width: 150,
             sortable: true,
             filter: "agNumberColumnFilter",
@@ -114,6 +145,7 @@ export default function VehicleTable({onOpenEditVehicleModal, onReadyRefresh, on
         {
             headerName: "Wheels",
             field: "numberOfWheels",
+            colId: "numberOfWheels",
             width: 130,
             sortable: true,
             filter: "agNumberColumnFilter",
@@ -122,6 +154,7 @@ export default function VehicleTable({onOpenEditVehicleModal, onReadyRefresh, on
         {
             headerName: "Capacity",
             field: "capacity",
+            colId: "capacity",
             width: 130,
             sortable: true,
             filter: "agNumberColumnFilter",
@@ -130,6 +163,7 @@ export default function VehicleTable({onOpenEditVehicleModal, onReadyRefresh, on
         {
             headerName: "Distance Travelled",
             field: "distanceTravelled",
+            colId: "distanceTravelled",
             width: 180,
             sortable: true,
             filter: "agNumberColumnFilter",
@@ -138,6 +172,7 @@ export default function VehicleTable({onOpenEditVehicleModal, onReadyRefresh, on
         {
             headerName: "Fuel Consumption",
             field: "fuelConsumption",
+            colId: "fuelConsumption",
             width: 170,
             sortable: true,
             filter: "agNumberColumnFilter",
@@ -181,7 +216,7 @@ export default function VehicleTable({onOpenEditVehicleModal, onReadyRefresh, on
         if (!gridApiRef.current) return;
         const ds = makeDatasource();
         gridApiRef.current.setGridOption('datasource', ds);
-        gridApiRef.current.purgeInfiniteCache(); // первая загрузка
+        gridApiRef.current.purgeInfiniteCache();
     }, [makeDatasource]);
 
     const exposeRefresh = useCallback(() => {
@@ -208,7 +243,6 @@ export default function VehicleTable({onOpenEditVehicleModal, onReadyRefresh, on
                 api.ensureIndexVisible(0);
             },
 
-            // fuelConsumption > X
             applyFilterFuelGt: (raw) => {
                 const x = Number.parseFloat(raw);
                 if (!Number.isFinite(x)) return;
@@ -250,6 +284,20 @@ export default function VehicleTable({onOpenEditVehicleModal, onReadyRefresh, on
                         type: "inRange",
                         filter: min,
                         filterTo: max,
+                    },
+                });
+                api.onFilterChanged();
+                api.purgeInfiniteCache();
+                api.ensureIndexVisible(0);
+            },
+
+            applyFilterByOwnerName: (name) => {
+                if (!name) return;
+                api.setFilterModel({
+                    "owner.fullName": {
+                        filterType: "text",
+                        type: "contains",
+                        filter: String(name),
                     },
                 });
                 api.onFilterChanged();
